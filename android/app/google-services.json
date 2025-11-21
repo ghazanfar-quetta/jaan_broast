@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "478346156088",
+    "project_id": "jaan-broast",
+    "storage_bucket": "jaan-broast.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:478346156088:android:11733ee95a71883daf6ecd",
+        "android_client_info": {
+          "package_name": "com.jaan.jaan_broast"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "478346156088-8nr2n3hq57kjsfjquh2pgqtadjg1v31n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jaan.jaan_broast",
+            "certificate_hash": "08a2aedbcc53bcdc0d331fbe7bc15f6961c167ae"
+          }
+        },
+        {
+          "client_id": "478346156088-626co3lcbp4d4gs81do4eh5nqobo86b7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMCKKRKldYTDiRLpdyCdM41Ht4OSR_omc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "478346156088-626co3lcbp4d4gs81do4eh5nqobo86b7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
