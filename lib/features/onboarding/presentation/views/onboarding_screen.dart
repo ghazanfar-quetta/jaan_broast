@@ -7,6 +7,7 @@ import '../view_models/onboarding_view_model.dart';
 import 'onboarding_page1.dart';
 import 'onboarding_page2.dart';
 import 'onboarding_page3.dart';
+import 'package:jaan_broast/routes.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -34,8 +35,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _navigateToAuth() async {
     await LocalStorageService.setHasSeenOnboarding(true);
+    // In _navigateToAuth() method
     if (mounted) {
-      Navigator.pushReplacementNamed(context, '/auth');
+      AppRoutes.pushReplacement(context, AppRoutes.auth);
     }
   }
 

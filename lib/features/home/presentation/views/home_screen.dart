@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/screen_utils.dart';
 import '../../../../core/services/local_storage_service.dart';
+import 'package:jaan_broast/routes.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -35,7 +36,7 @@ class HomeScreen extends StatelessWidget {
             ),
             onPressed: () async {
               await LocalStorageService.setIsLoggedIn(false);
-              Navigator.pushReplacementNamed(context, '/auth');
+              AppRoutes.pushReplacement(context, AppRoutes.auth);
             },
           ),
         ],

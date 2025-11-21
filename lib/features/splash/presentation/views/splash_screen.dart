@@ -1,7 +1,7 @@
 // lib/features/splash/presentation/views/splash_screen.dart
 import 'package:flutter/material.dart';
-import '../../../../core/utils/screen_utils.dart';
 import '../../../../core/routes/app_router.dart';
+import '../../../../routes.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -21,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 2));
     final initialRoute = await AppRouter.getInitialRoute();
     if (mounted) {
-      Navigator.pushReplacementNamed(context, initialRoute);
+      AppRoutes.pushReplacement(context, initialRoute);
     }
   }
 

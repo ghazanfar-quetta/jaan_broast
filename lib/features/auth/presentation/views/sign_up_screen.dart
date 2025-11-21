@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/utils/screen_utils.dart';
 import '../view_models/auth_view_model.dart';
 import '../views/sign_up_form_screen.dart';
+import 'package:jaan_broast/routes.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -34,7 +35,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (success && mounted) {
         _showSuccessSnackbar(context, 'Signed in successfully!');
-        Navigator.pushReplacementNamed(context, '/home');
+        AppRoutes.pushReplacement(context, AppRoutes.home);
       } else {
         _showErrorSnackbar(context, authViewModel.errorMessage);
       }
@@ -47,7 +48,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (success && mounted) {
       _showSuccessSnackbar(context, 'Signed in as guest successfully!');
-      Navigator.pushReplacementNamed(context, '/home');
+      AppRoutes.pushReplacement(context, AppRoutes.home);
     } else {
       _showErrorSnackbar(context, authViewModel.errorMessage);
     }
@@ -66,7 +67,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (success && mounted) {
       _showSuccessSnackbar(context, 'Signed in with Google successfully!');
-      Navigator.pushReplacementNamed(context, '/home');
+      AppRoutes.pushReplacement(context, AppRoutes.home);
     } else {
       _showErrorSnackbar(context, authViewModel.errorMessage);
     }
@@ -83,7 +84,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (success && mounted) {
         _showSuccessSnackbar(context, 'Account created successfully!');
-        Navigator.pushReplacementNamed(context, '/home');
+        AppRoutes.pushReplacement(context, AppRoutes.home);
       } else {
         _showErrorSnackbar(context, authViewModel.errorMessage);
       }
@@ -581,9 +582,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         child: GestureDetector(
           onTap: () {
             // Navigate to the new sign up screen
-            Navigator.push(
+            AppRoutes.pushMaterialPage(
               context,
-              MaterialPageRoute(builder: (context) => const SignUpFormScreen()),
+              const SignUpFormScreen(),
+              routeName:
+                  AppRoutes.signUpForm, // Add this route to your routes.dart
             );
           },
           child: RichText(
