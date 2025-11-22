@@ -148,43 +148,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Padding(
-              padding: ScreenUtils.responsivePadding(
-                context,
-                mobile: 20,
-                tablet: 28,
-                desktop: 32,
-              ),
-              child: Column(
-                children: [
-                  // Top content - logo and header (fixed height)
-                  _buildTopSection(context),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: ScreenUtils.responsivePadding(
+              context,
+              mobile: 20,
+              tablet: 28,
+              desktop: 32,
+            ),
+            child: Column(
+              children: [
+                // Top content - logo and header (fixed height)
+                _buildTopSection(context),
 
-                  // Form section - takes remaining space but constrained
-                  Expanded(
-                    child: SingleChildScrollView(
-                      // Added for keyboard
-                      physics:
-                          const NeverScrollableScrollPhysics(), // Disables scrolling
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight:
-                              constraints.maxHeight *
-                              0.4, // Ensure minimum height
-                        ),
-                        child: _buildForm(context),
-                      ),
-                    ),
-                  ),
+                // Form section
+                _buildForm(context),
 
-                  // Bottom section - sign up link
-                  _buildBottomSection(context),
-                ],
-              ),
-            );
-          },
+                // Bottom section - sign up link
+                _buildBottomSection(context),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -270,6 +254,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ),
       ),
+      SizedBox(height: 20),
     ],
   );
 
