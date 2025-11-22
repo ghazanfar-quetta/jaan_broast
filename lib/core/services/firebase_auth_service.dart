@@ -4,6 +4,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  FirebaseAuth get auth => _auth;
+
   // GoogleSignIn must use named constructor (new restriction)
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
 

@@ -105,41 +105,36 @@ class AuthViewModel with ChangeNotifier {
 
   // Sign up with Email and Password
   Future<bool> signUpWithEmailAndPassword(String email, String password) async {
-    _setLoading(true);
-    _errorMessage = '';
+    _isLoading = true;
+    notifyListeners();
 
     try {
-      // Basic validation
-      if (email.isEmpty || password.isEmpty) {
-        _errorMessage = 'Please fill in all fields';
-        _setLoading(false);
-        return false;
-      }
-
-      if (password.length < 6) {
-        _errorMessage = 'Password must be at least 6 characters';
-        _setLoading(false);
-        return false;
-      }
-
-      final User? user = await _authService.signUpWithEmailAndPassword(
-        email,
-        password,
+      await _authService.auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
       );
 
-      if (user != null) {
-        await LocalStorageService.setIsLoggedIn(true);
-        _setLoading(false);
-        return true;
+      _errorMessage = '';
+      return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        _errorMessage =
+            'This email is already registered. Please use a different email or sign in.';
+      } else if (e.code == 'weak-password') {
+        _errorMessage =
+            'The password is too weak. Please choose a stronger password.';
+      } else if (e.code == 'invalid-email') {
+        _errorMessage = 'The email address is not valid.';
       } else {
-        _errorMessage = 'Sign-up failed. Please try again.';
-        _setLoading(false);
-        return false;
+        _errorMessage = e.message ?? 'Sign-up failed. Please try again.';
       }
-    } catch (e) {
-      _errorMessage = 'Error during sign-up: $e';
-      _setLoading(false);
       return false;
+    } catch (e) {
+      _errorMessage = 'Sign-up failed. Please try again.';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -164,6 +159,39 @@ class AuthViewModel with ChangeNotifier {
       _errorMessage = 'Error during guest sign-in: $e';
       _setLoading(false);
       return false;
+    }
+  }
+
+  Future<bool> sendPasswordResetEmail(String email) async {
+    if (email.trim().isEmpty) {
+      _errorMessage = 'Please provide an email address.';
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _authService.auth.sendPasswordResetEmail(email: email.trim());
+
+      _errorMessage = '';
+      return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        _errorMessage = 'No user found for that email.';
+      } else if (e.code == 'invalid-email') {
+        _errorMessage = 'The email address is not valid.';
+      } else {
+        _errorMessage = e.message ?? e.code;
+      }
+      return false;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

@@ -79,21 +79,15 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
             tablet: 28,
             desktop: 32,
           ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: ScreenUtils.safeAreaHeight(context),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: ScreenUtils.heightPercent(context, 0.03)),
-                // Header
-                _buildHeader(context),
-                SizedBox(height: ScreenUtils.heightPercent(context, 0.04)),
-                // Sign Up Form
-                _buildSignUpForm(context),
-              ],
-            ),
+          child: Column(
+            children: [
+              // Header section
+              _buildHeader(context),
+              SizedBox(height: ScreenUtils.heightPercent(context, 0.02)),
+
+              // Form section
+              _buildSignUpForm(context),
+            ],
           ),
         ),
       ),
@@ -140,6 +134,7 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
         return Form(
           key: _formKey,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Name Field
               _buildInputField(
@@ -154,7 +149,7 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
                   return null;
                 },
               ),
-              SizedBox(height: ScreenUtils.heightPercent(context, 0.03)),
+              SizedBox(height: ScreenUtils.heightPercent(context, 0.015)),
 
               // Email Field
               _buildInputField(
@@ -174,7 +169,7 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
                   return null;
                 },
               ),
-              SizedBox(height: ScreenUtils.heightPercent(context, 0.03)),
+              SizedBox(height: ScreenUtils.heightPercent(context, 0.015)),
 
               // Password Field
               _buildInputField(
@@ -193,7 +188,7 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
                   return null;
                 },
               ),
-              SizedBox(height: ScreenUtils.heightPercent(context, 0.03)),
+              SizedBox(height: ScreenUtils.heightPercent(context, 0.015)),
 
               // Confirm Password Field
               _buildInputField(
@@ -212,7 +207,7 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
                   return null;
                 },
               ),
-              SizedBox(height: ScreenUtils.heightPercent(context, 0.05)),
+              SizedBox(height: ScreenUtils.heightPercent(context, 0.03)),
 
               // Sign Up Button
               SizedBox(
@@ -227,9 +222,9 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
                     padding: EdgeInsets.symmetric(
                       vertical: ScreenUtils.responsiveValue(
                         context,
-                        mobile: 16,
-                        tablet: 17,
-                        desktop: 18,
+                        mobile: 14,
+                        tablet: 15,
+                        desktop: 16,
                       ),
                     ),
                     shape: RoundedRectangleBorder(
@@ -261,7 +256,7 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
                         ),
                 ),
               ),
-              SizedBox(height: ScreenUtils.heightPercent(context, 0.03)),
+              SizedBox(height: ScreenUtils.heightPercent(context, 0.02)),
 
               // Already have an account
               Center(
@@ -294,6 +289,7 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
                   ),
                 ),
               ),
+              SizedBox(height: ScreenUtils.heightPercent(context, 0.01)),
             ],
           ),
         );
