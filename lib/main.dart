@@ -9,11 +9,37 @@ import 'features/onboarding/presentation/views/onboarding_screen.dart';
 import 'features/auth/presentation/views/sign_up_screen.dart';
 import 'features/splash/presentation/views/splash_screen.dart';
 import 'features/home/presentation/views/home_screen.dart';
+import 'core/services/local_storage_service.dart';
+import 'core/services/permission_service.dart'; // Add this import
+import 'package:jaan_broast/routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  // Request notification permission on first app launch
+  await _requestNotificationPermission();
   runApp(const MyApp());
+}
+
+Future<void> _requestNotificationPermission() async {
+  try {
+    final hasAsked = await LocalStorageService.getNotificationPermissionAsked();
+
+    if (!hasAsked) {
+      print('Requesting notification permission...');
+
+      // Use the static method directly from PermissionService
+      await PermissionService.requestNotificationPermission();
+
+      // Mark as asked regardless of user's choice
+      await LocalStorageService.setNotificationPermissionAsked(true);
+      print('Notification permission flow completed');
+    } else {
+      print('Notification permission already asked');
+    }
+  } catch (e) {
+    print('Error in notification permission flow: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {

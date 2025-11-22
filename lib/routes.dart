@@ -8,6 +8,9 @@ import 'features/auth/presentation/views/sign_up_screen.dart';
 import 'features/home/presentation/views/home_screen.dart';
 import 'features/auth/presentation/views/sign_up_form_screen.dart';
 
+// Import permission service
+import 'core/services/permission_service.dart';
+
 class AppRoutes {
   // Route names
   static const String splash = '/';
@@ -24,6 +27,9 @@ class AppRoutes {
   static const String addresses = '/addresses';
   static const String favorites = '/favorites';
   static const String signUpForm = '/sign-up-form';
+
+  // Permission service getter for easy access
+  static PermissionService get permissions => PermissionService();
 
   // Route generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
