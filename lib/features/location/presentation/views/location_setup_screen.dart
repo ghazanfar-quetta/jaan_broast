@@ -22,12 +22,25 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _landmarkController = TextEditingController();
+  final TextEditingController _streetNumberController = TextEditingController();
+  final TextEditingController _unitNumberController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
+  // New fields for address type
+  String? _selectedAddressType;
+  final List<String> _addressTypes = ['Flat', 'House', 'Suite', 'Office'];
+  final Map<String, String> _addressTypeHints = {
+    'Flat': 'Flat Number',
+    'House': 'House Number',
+    'Suite': 'Suite Number',
+    'Office': 'Office Number',
+  };
 
   @override
   void initState() {
     super.initState();
     _initializeLocation();
+    _loadSavedData();
   }
 
   void _initializeLocation() async {
@@ -43,6 +56,13 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
         _addressController.text = locationViewModel.currentLocation;
       }
     }
+  }
+
+  void _loadSavedData() async {
+    // TODO: Load saved address data from Firebase/Firestore
+    // This will be implemented when we integrate with backend
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    // Example: await authViewModel.loadUserAddressData();
   }
 
   @override
@@ -74,6 +94,8 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                 _buildHeader(),
                 const SizedBox(height: 24),
                 _buildAddressSection(),
+                const SizedBox(height: 20),
+                _buildAddressDetailsSection(),
                 const SizedBox(height: 20),
                 _buildPersonalInfoSection(),
                 const SizedBox(height: 30),
@@ -164,7 +186,6 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                   ),
                 ),
                 prefixIcon: const Icon(Icons.location_on),
-                // Removed the suffixIcon (search icon) from here
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -238,6 +259,118 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildAddressDetailsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Address Details',
+          style: TextStyle(
+            fontSize: ScreenUtils.responsiveFontSize(
+              context,
+              mobile: AppConstants.headingSizeSmall,
+              tablet: AppConstants.headingSizeSmall,
+              desktop: AppConstants.headingSizeSmall,
+            ),
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onBackground,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Street Number (Optional)
+        TextFormField(
+          controller: _streetNumberController,
+          decoration: InputDecoration(
+            hintText: 'Street Number (optional)',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+            ),
+            prefixIcon: const Icon(Icons.numbers),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Address Type Section - FIXED OVERFLOW
+        Column(
+          children: [
+            // Always show the dropdown
+            Container(
+              width: double.infinity, // Ensure it takes full width
+              child: DropdownButtonFormField<String>(
+                value: _selectedAddressType,
+                isExpanded:
+                    true, // This is the key fix - makes dropdown take full width
+                decoration: InputDecoration(
+                  hintText: 'Type (Flat, House, Suite, Office)',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.borderRadius,
+                    ),
+                  ),
+                  prefixIcon: const Icon(Icons.type_specimen),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 16,
+                  ),
+                ),
+                items: _addressTypes.map((String type) {
+                  return DropdownMenuItem<String>(
+                    value: type,
+                    child: Text(
+                      type,
+                      overflow: TextOverflow.ellipsis, // Prevent text overflow
+                    ),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedAddressType = newValue;
+                    _unitNumberController.clear();
+                  });
+                },
+              ),
+            ),
+
+            // Show unit number field only when address type is selected
+            if (_selectedAddressType != null) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _unitNumberController,
+                decoration: InputDecoration(
+                  hintText: _addressTypeHints[_selectedAddressType] ?? 'Number',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.borderRadius,
+                    ),
+                  ),
+                  prefixIcon: const Icon(Icons.confirmation_number),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    onPressed: () {
+                      setState(() {
+                        _selectedAddressType = null;
+                        _unitNumberController.clear();
+                      });
+                    },
+                    tooltip: 'Clear type',
+                  ),
+                ),
+                validator: (value) {
+                  if (_selectedAddressType != null &&
+                      (value == null || value.isEmpty)) {
+                    return 'Please enter ${_addressTypeHints[_selectedAddressType]?.toLowerCase() ?? 'number'}';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ],
+        ),
+      ],
     );
   }
 
@@ -359,7 +492,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _openManualAddressSearch(); // Updated to use new search
+              _openManualAddressSearch();
             },
             child: const Text('Search Address'),
           ),
@@ -374,7 +507,6 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     );
   }
 
-  // NEW: Get current location for address
   void _getCurrentLocationForAddress() async {
     final locationViewModel = Provider.of<LocationViewModel>(
       context,
@@ -385,7 +517,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
       SnackBar(
         content: const Text('Getting your current location...'),
         backgroundColor: Colors.blue[700],
-        duration: const Duration(seconds: 30), // Long duration for loading
+        duration: const Duration(seconds: 30),
       ),
     );
 
@@ -420,7 +552,6 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     }
   }
 
-  // NEW: Open manual address search (placeholder for Google Maps integration)
   void _openManualAddressSearch() async {
     final selectedAddress = await Navigator.push(
       context,
@@ -428,7 +559,6 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     );
 
     if (selectedAddress != null && mounted) {
-      // Update the address field with selected address
       setState(() {
         _addressController.text =
             selectedAddress['description'] ??
@@ -436,7 +566,6 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
             'Selected Address';
       });
 
-      // Update location in view model
       final locationViewModel = Provider.of<LocationViewModel>(
         context,
         listen: false,
@@ -466,6 +595,21 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
         context,
         listen: false,
       );
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+
+      // Prepare address data for saving
+      final addressData = {
+        'fullAddress': _addressController.text,
+        'landmark': _landmarkController.text,
+        'streetNumber': _streetNumberController.text,
+        'addressType': _selectedAddressType,
+        'unitNumber': _unitNumberController.text,
+        'contactName': _nameController.text,
+        'contactPhone': _phoneController.text,
+        'latitude': locationViewModel.latitude,
+        'longitude': locationViewModel.longitude,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
 
       // Update location with the entered address
       locationViewModel.updateLocationManually(
@@ -474,16 +618,15 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
         lng: locationViewModel.longitude,
       );
 
-      // Mark first login as completed
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      authViewModel.completeFirstLogin();
+      // Save address data to Firebase
+      _saveAddressToFirebase(addressData);
 
-      // TODO: Save personal info to user profile
+      // Mark first login as completed
+      authViewModel.completeFirstLogin();
 
       // Navigate to home
       Navigator.pushReplacementNamed(context, '/home');
 
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Address saved successfully!'),
@@ -494,12 +637,37 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     }
   }
 
+  void _saveAddressToFirebase(Map<String, dynamic> addressData) async {
+    try {
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+
+      // TODO: Implement Firebase Firestore saving
+      // This will depend on your Firebase setup and user authentication
+      /*
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(authViewModel.currentUser?.uid)
+          .collection('addresses')
+          .doc('primary')
+          .set(addressData);
+      */
+
+      print('Address data to save: $addressData');
+      // For now, we'll just print the data. Implement Firebase integration as needed.
+    } catch (e) {
+      print('Error saving address to Firebase: $e');
+      // You might want to show an error message to the user
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
     _landmarkController.dispose();
+    _streetNumberController.dispose();
+    _unitNumberController.dispose();
     super.dispose();
   }
 }
