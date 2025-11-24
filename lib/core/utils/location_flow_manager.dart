@@ -1,13 +1,12 @@
+// lib/core/utils/location_flow_manager.dart
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../services/permission_service.dart';
 import '../../features/location/presentation/view_models/location_view_model.dart';
 
 enum LocationFlowState {
   initial,
   requestingPermission,
-  permissionGranted,
-  permissionDenied,
   gettingLocation,
   locationSuccess,
   locationError,
@@ -21,52 +20,41 @@ class LocationFlowManager with ChangeNotifier {
 
   LocationFlowState get currentState => _currentState;
   String get errorMessage => _errorMessage;
+
   bool get isLoading =>
       _currentState == LocationFlowState.requestingPermission ||
       _currentState == LocationFlowState.gettingLocation;
 
   LocationFlowManager(this._locationViewModel);
 
-  // Start the location flow
+  /// Start flow — always show initial prompt
   Future<void> startFlow() async {
-    await _checkInitialPermission();
+    _setState(LocationFlowState.initial);
   }
 
-  // Check if we already have permission
-  Future<void> _checkInitialPermission() async {
-    try {
-      final hasPermission = await PermissionService.checkLocationPermission();
-      if (hasPermission) {
-        _setState(LocationFlowState.permissionGranted);
-      } else {
-        _setState(LocationFlowState.initial);
-      }
-    } catch (e) {
-      _setError('Failed to check location permission: $e');
-    }
-  }
-
-  // Request location permission
+  /// User tapped: "Use Current Location"
   Future<void> requestPermission() async {
     _setState(LocationFlowState.requestingPermission);
 
     try {
       final granted = await PermissionService.requestLocationPermission();
 
-      if (granted) {
-        _setState(LocationFlowState.permissionGranted);
-      } else {
-        _setState(LocationFlowState.permissionDenied);
-        _setError(
-          'Location permission is required for current location feature.',
-        );
+      if (!granted) {
+        // Stay on same dialog with a message (no new screen)
+        _setError("Location permission is required to use current location");
+        _setState(LocationFlowState.initial);
+        return;
       }
+
+      // Immediately fetch location
+      await getCurrentLocation();
     } catch (e) {
-      _setError('Failed to request location permission: $e');
+      _setError("Failed to request location permission: $e");
+      _setState(LocationFlowState.initial);
     }
   }
 
-  // Get current location
+  /// Fetch current location immediately after permission
   Future<void> getCurrentLocation() async {
     _setState(LocationFlowState.gettingLocation);
 
@@ -76,39 +64,27 @@ class LocationFlowManager with ChangeNotifier {
       if (success) {
         _setState(LocationFlowState.locationSuccess);
       } else {
+        _setError("Failed to get current location");
         _setState(LocationFlowState.locationError);
-        _setError(
-          'Failed to get current location: ${_locationViewModel.error}',
-        );
       }
     } catch (e) {
+      _setError("Error getting location: $e");
       _setState(LocationFlowState.locationError);
-      _setError('Error getting location: $e');
     }
   }
 
-  // Choose manual entry
+  /// User chooses manual entry
   void chooseManualEntry() {
     _setState(LocationFlowState.manualEntry);
   }
 
-  // Retry from error state
+  /// Retry from error
   Future<void> retry() async {
     _clearError();
     await startFlow();
   }
 
-  // Open app settings
-  void openSettings() {
-    PermissionService.openAppSettings();
-  }
-
-  // Reset the flow
-  void reset() {
-    _clearError();
-    _setState(LocationFlowState.initial);
-  }
-
+  /// State updates
   void _setState(LocationFlowState state) {
     _currentState = state;
     notifyListeners();
@@ -122,5 +98,28 @@ class LocationFlowManager with ChangeNotifier {
   void _clearError() {
     _errorMessage = '';
     notifyListeners();
+  }
+
+  /// Requests permission if needed, then fetches current location
+  Future<void> requestPermissionAndFetchLocation() async {
+    try {
+      // Check if we already have permission
+      final hasPermission = await PermissionService.checkLocationPermission();
+
+      if (!hasPermission) {
+        final granted = await PermissionService.requestLocationPermission();
+        if (!granted) {
+          _setError(
+            'Location permission is required for current location feature.',
+          );
+          return;
+        }
+      }
+
+      // Now get the location
+      await getCurrentLocation();
+    } catch (e) {
+      _setError('Failed to get location: $e');
+    }
   }
 }
