@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/screen_utils.dart';
 import '../view_models/location_view_model.dart';
 import 'package:jaan_broast/features/auth/presentation/view_models/auth_view_model.dart';
+import 'address_search_screen.dart';
 
 class LocationSetupScreen extends StatefulWidget {
   final bool isAutoLocation;
@@ -163,10 +164,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                   ),
                 ),
                 prefixIcon: const Icon(Icons.location_on),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.map),
-                  onPressed: _openMapForAddress,
-                ),
+                // Removed the suffixIcon (search icon) from here
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -345,7 +343,6 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
   }
 
   void _openMapForAddress() {
-    // NEW: Show dialog for changing address method
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -362,9 +359,9 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _openManualAddressSearch();
+              _openManualAddressSearch(); // Updated to use new search
             },
-            child: const Text('Search Manually'),
+            child: const Text('Search Address'),
           ),
           TextButton(
             onPressed: () {
@@ -424,23 +421,43 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
   }
 
   // NEW: Open manual address search (placeholder for Google Maps integration)
-  void _openManualAddressSearch() {
-    // TODO: Implement Google Maps Places API for address search
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Manual address search will be implemented with Google Maps Places API',
-        ),
-        backgroundColor: Colors.orange[700],
-        duration: const Duration(seconds: 3),
-      ),
+  void _openManualAddressSearch() async {
+    final selectedAddress = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddressSearchScreen()),
     );
 
-    // For now, just focus on the address field
-    FocusScope.of(context).requestFocus(FocusNode());
-    Future.delayed(const Duration(milliseconds: 100), () {
-      FocusScope.of(context).requestFocus(_addressController as FocusNode?);
-    });
+    if (selectedAddress != null && mounted) {
+      // Update the address field with selected address
+      setState(() {
+        _addressController.text =
+            selectedAddress['description'] ??
+            selectedAddress['display_name'] ??
+            'Selected Address';
+      });
+
+      // Update location in view model
+      final locationViewModel = Provider.of<LocationViewModel>(
+        context,
+        listen: false,
+      );
+
+      if (selectedAddress['lat'] != null && selectedAddress['lon'] != null) {
+        locationViewModel.updateLocationManually(
+          _addressController.text,
+          lat: selectedAddress['lat'],
+          lng: selectedAddress['lon'],
+        );
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Address selected successfully!'),
+          backgroundColor: Colors.green[700],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _saveAddress() {
