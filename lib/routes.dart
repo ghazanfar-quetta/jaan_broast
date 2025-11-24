@@ -28,6 +28,11 @@ class AppRoutes {
   static const String favorites = '/favorites';
   static const String signUpForm = '/sign-up-form';
 
+  // New home feature routes
+  static const String foodDetails = '/food-details';
+  static const String categoryItems = '/category-items';
+  static const String search = '/search';
+
   // Permission service getter for easy access
   static PermissionService get permissions => PermissionService();
 
@@ -46,6 +51,47 @@ class AppRoutes {
 
       case home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
+
+      // New home feature routes
+      case foodDetails:
+        final arguments = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            // Placeholder - replace with actual FoodDetailsScreen
+            appBar: AppBar(title: const Text('Food Details')),
+            body: Center(
+              child: Text(
+                'Food Details Screen - ID: ${arguments?['foodId'] ?? 'N/A'}',
+              ),
+            ),
+          ),
+        );
+
+      case categoryItems:
+        final arguments = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            // Placeholder - replace with actual CategoryItemsScreen
+            appBar: AppBar(title: const Text('Category Items')),
+            body: Center(
+              child: Text('Category: ${arguments?['categoryName'] ?? 'N/A'}'),
+            ),
+          ),
+        );
+
+      case search:
+        final arguments = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            // Placeholder - replace with actual SearchScreen
+            appBar: AppBar(title: const Text('Search')),
+            body: Center(
+              child: Text(
+                'Search Screen - Query: ${arguments?['query'] ?? 'N/A'}',
+              ),
+            ),
+          ),
+        );
 
       // TODO: Add routes for remaining screens as you build them
       /*

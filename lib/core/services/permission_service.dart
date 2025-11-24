@@ -1,5 +1,6 @@
 // lib/core/services/permission_service.dart
 import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
 
 class PermissionService {
   // Request camera and photos permission for profile picture
@@ -20,14 +21,27 @@ class PermissionService {
 
   // Request location permission
   static Future<bool> requestLocationPermission() async {
-    final status = await Permission.locationWhenInUse.request();
-    return status.isGranted;
+    try {
+      print('📍 PermissionService: Requesting location permission...');
+      final status = await Permission.locationWhenInUse.request();
+      print('📍 PermissionService: Permission status - $status');
+      return status.isGranted;
+    } catch (e) {
+      print('❌ PermissionService: Error requesting location permission - $e');
+      return false;
+    }
   }
 
   // Check if location permission is granted
   static Future<bool> checkLocationPermission() async {
-    final status = await Permission.locationWhenInUse.status;
-    return status.isGranted;
+    try {
+      final status = await Permission.locationWhenInUse.status;
+      print('📍 PermissionService: Current permission status - $status');
+      return status.isGranted;
+    } catch (e) {
+      print('❌ PermissionService: Error checking location permission - $e');
+      return false;
+    }
   }
 
   // Request notification permission
@@ -45,5 +59,69 @@ class PermissionService {
   // Open app settings for manual permission enabling
   static Future<void> openAppSettings() async {
     await openAppSettings();
+  }
+
+  static Future<bool> isLocationServiceEnabled() async {
+    return await Geolocator.isLocationServiceEnabled();
+  }
+
+  // Get detailed location permission status
+  static Future<LocationPermission> getDetailedLocationPermission() async {
+    return await Geolocator.checkPermission();
+  }
+
+  // Request location permission with detailed status
+  static Future<LocationPermission> requestDetailedLocationPermission() async {
+    return await Geolocator.requestPermission();
+  }
+
+  // Get current position with high accuracy
+  static Future<Position?> getCurrentPosition() async {
+    try {
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+    } catch (e) {
+      print('Error getting current position: $e');
+      return null;
+    }
+  }
+
+  // Combined method to handle complete location permission flow
+  static Future<Position?> handleLocationPermissionFlow() async {
+    try {
+      // Check if location services are enabled
+      final serviceEnabled = await isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Location services are disabled.');
+      }
+
+      // Check permission status
+      LocationPermission permission = await getDetailedLocationPermission();
+
+      if (permission == LocationPermission.denied) {
+        permission = await requestDetailedLocationPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Location permissions are denied');
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception('Location permissions are permanently denied.');
+      }
+
+      // Get the current position
+      return await getCurrentPosition();
+    } catch (e) {
+      print('Error in location permission flow: $e');
+      return null;
+    }
+  }
+
+  // Check if we have proper location permission (using geolocator)
+  static Future<bool> hasProperLocationPermission() async {
+    final permission = await getDetailedLocationPermission();
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
   }
 }

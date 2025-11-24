@@ -9,9 +9,13 @@ import 'features/onboarding/presentation/views/onboarding_screen.dart';
 import 'features/auth/presentation/views/sign_up_screen.dart';
 import 'features/splash/presentation/views/splash_screen.dart';
 import 'features/home/presentation/views/home_screen.dart';
+import 'features/home/presentation/view_models/home_view_model.dart';
+import 'features/location/presentation/view_models/location_view_model.dart'; // Add this import
 import 'core/services/local_storage_service.dart';
-import 'core/services/permission_service.dart'; // Add this import
+import 'core/services/permission_service.dart';
 import 'package:jaan_broast/routes.dart';
+// Add this import for custom themes
+import 'core/constants/app_themes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,14 +55,16 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => OnboardingViewModel()),
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(
+          create: (_) => LocationViewModel(),
+        ), // Add this line
       ],
       child: MaterialApp(
         title: 'Jaan Broast',
-        theme: ThemeData(
-          primarySwatch: Colors.amber,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-          useMaterial3: true,
-        ),
+        theme: AppThemes.lightTheme, // Use our custom orange theme
+        darkTheme: AppThemes.darkTheme, // Use our custom dark orange theme
+        themeMode: ThemeMode.system, // Follow system theme
         initialRoute: '/splash',
         routes: {
           '/splash': (context) => const SplashScreen(),

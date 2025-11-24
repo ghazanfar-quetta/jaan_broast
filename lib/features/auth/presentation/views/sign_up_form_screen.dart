@@ -1,7 +1,9 @@
 // lib/features/auth/presentation/views/sign_up_form_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Add this import
 import '../../../../core/utils/screen_utils.dart';
+import '../../../../core/utils/location_navigation_helper.dart'; // Add this import
 import '../view_models/auth_view_model.dart';
 
 class SignUpFormScreen extends StatefulWidget {
@@ -28,6 +30,7 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
     super.dispose();
   }
 
+  // UPDATED: Sign up with location handling
   void _handleSignUp(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
@@ -38,8 +41,16 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
       );
 
       if (success && mounted) {
-        // Navigate to home screen after successful sign up
-        Navigator.pushReplacementNamed(context, '/home');
+        // UPDATED: Handle location initialization and navigation
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await LocationNavigationHelper.handlePostLoginNavigation(
+            context,
+            user,
+          );
+        } else {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       } else {
         _showErrorSnackbar(context, authViewModel.errorMessage);
       }

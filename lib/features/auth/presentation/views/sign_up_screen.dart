@@ -1,10 +1,12 @@
 // lib/features/auth/presentation/views/sign_up_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Add this import
 import '../../../../core/utils/screen_utils.dart';
 import '../view_models/auth_view_model.dart';
 import '../views/sign_up_form_screen.dart';
 import 'package:jaan_broast/routes.dart';
+import 'package:jaan_broast/core/utils/location_navigation_helper.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -46,7 +48,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  // SIGN IN / SIGN UP FUNCTIONS (UNCHANGED)
+  // UPDATED: SIGN IN / SIGN UP FUNCTIONS with location handling
   void _handleSignIn(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
@@ -57,7 +59,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (success && mounted) {
         _showSuccessSnackbar(context, 'Signed in successfully!');
-        AppRoutes.pushReplacement(context, AppRoutes.home);
+        // Get the current user and handle location navigation
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await LocationNavigationHelper.handlePostLoginNavigation(
+            context,
+            user,
+          );
+        } else {
+          AppRoutes.pushReplacement(context, AppRoutes.home);
+        }
       } else {
         _showErrorSnackbar(context, authViewModel.errorMessage);
       }
@@ -70,7 +81,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (success && mounted) {
       _showSuccessSnackbar(context, 'Signed in as guest successfully!');
-      AppRoutes.pushReplacement(context, AppRoutes.home);
+      // Get the current user and handle location navigation
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await LocationNavigationHelper.handlePostLoginNavigation(context, user);
+      } else {
+        AppRoutes.pushReplacement(context, AppRoutes.home);
+      }
     } else {
       _showErrorSnackbar(context, authViewModel.errorMessage);
     }
@@ -86,7 +103,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (success && mounted) {
       _showSuccessSnackbar(context, 'Signed in with Google successfully!');
-      AppRoutes.pushReplacement(context, AppRoutes.home);
+      // Get the current user and handle location navigation
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await LocationNavigationHelper.handlePostLoginNavigation(context, user);
+      } else {
+        AppRoutes.pushReplacement(context, AppRoutes.home);
+      }
     } else {
       _showErrorSnackbar(context, authViewModel.errorMessage);
     }

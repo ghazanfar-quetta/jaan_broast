@@ -8,6 +8,20 @@ class LocalStorageService {
   static const String _notificationPermissionAskedKey =
       'notification_permission_asked';
 
+  // Add these methods to your existing LocalStorageService class
+
+  // Check if user has logged in before
+  static Future<bool> getHasLoggedInBefore() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('has_logged_in_before') ?? false;
+  }
+
+  // Set that user has logged in before
+  static Future<void> setHasLoggedInBefore(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_logged_in_before', value);
+  }
+
   static Future<void> setHasSeenOnboarding(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_hasSeenOnboardingKey, value);

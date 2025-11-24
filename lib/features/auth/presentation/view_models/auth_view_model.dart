@@ -1,6 +1,6 @@
 // lib/features/auth/presentation/view_models/auth_view_model.dart
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Add this import
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/services/firebase_auth_service.dart';
 import '../../../../core/services/local_storage_service.dart';
 
@@ -12,6 +12,29 @@ class AuthViewModel with ChangeNotifier {
 
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
+
+  // Check if this is user's first login
+  Future<bool> _isFirstLogin(User user) async {
+    final hasLoggedInBefore = await LocalStorageService.getHasLoggedInBefore();
+    return !hasLoggedInBefore;
+  }
+
+  // Mark user as having logged in before
+  Future<void> _markAsLoggedInBefore() async {
+    await LocalStorageService.setHasLoggedInBefore(true);
+  }
+
+  // Check if location needs to be initialized (first login)
+  Future<bool> needsLocationInitialization(User user) async {
+    return await _isFirstLogin(user);
+  }
+
+  // Mark first login as completed
+  Future<void> completeFirstLogin() async {
+    await _markAsLoggedInBefore();
+  }
+
+  // ... ALL YOUR EXISTING METHODS REMAIN EXACTLY THE SAME ...
 
   // Sign in with Google
   Future<bool> signInWithGoogle() async {
