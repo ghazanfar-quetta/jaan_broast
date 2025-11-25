@@ -13,9 +13,13 @@ import 'address_search_screen.dart';
 
 class LocationSetupScreen extends StatefulWidget {
   final bool isAutoLocation;
+  final bool preserveContactDetails; // Add this parameter
 
-  const LocationSetupScreen({Key? key, required this.isAutoLocation})
-    : super(key: key);
+  const LocationSetupScreen({
+    Key? key,
+    required this.isAutoLocation,
+    this.preserveContactDetails = false, // Default to false
+  }) : super(key: key);
 
   @override
   State<LocationSetupScreen> createState() => _LocationSetupScreenState();
@@ -63,10 +67,53 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
   }
 
   void _loadSavedData() async {
-    // TODO: Load saved address data from Firebase/Firestore
-    // This will be implemented when we integrate with backend
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    // Example: await authViewModel.loadUserAddressData();
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      final userDoc = await firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+
+        // Only load contact details if preserveContactDetails is true
+        if (widget.preserveContactDetails) {
+          final personalInfo =
+              userData?['personalInfo'] as Map<String, dynamic>?;
+          if (personalInfo != null) {
+            setState(() {
+              _nameController.text = personalInfo['fullName']?.toString() ?? '';
+              _phoneController.text =
+                  personalInfo['phoneNumber']?.toString() ?? '';
+            });
+          }
+
+          // Also load address data to show current address (optional)
+          final address = userData?['address'] as Map<String, dynamic>?;
+          if (address != null) {
+            // You can choose to pre-fill address fields or leave them empty
+            // For now, we'll leave them empty for the user to enter new address
+          }
+        } else {
+          // Clear all fields for new setup (first time)
+          setState(() {
+            _nameController.clear();
+            _phoneController.clear();
+            _addressController.clear();
+            _landmarkController.clear();
+            _streetNumberController.clear();
+            _unitNumberController.clear();
+            _selectedAddressType = null;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading saved data: $e');
+    }
   }
 
   @override
@@ -462,7 +509,9 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                     ),
                   )
                 : Text(
-                    'Save Address & Continue',
+                    widget.preserveContactDetails
+                        ? 'Update Address'
+                        : 'Save Address & Continue',
                     style: TextStyle(
                       fontSize: ScreenUtils.responsiveFontSize(
                         context,
@@ -761,15 +810,21 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
       // Save complete user data to Firebase
       _saveUserDataToFirebase(userData);
 
-      // Mark first login as completed
-      authViewModel.completeFirstLogin();
+      // Mark first login as completed (only if it's first time setup)
+      if (!widget.preserveContactDetails) {
+        authViewModel.completeFirstLogin();
+      }
 
       // Navigate to home
       Navigator.pushReplacementNamed(context, '/home');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Profile setup completed successfully!'),
+          content: Text(
+            widget.preserveContactDetails
+                ? 'Address updated successfully!'
+                : 'Profile setup completed successfully!',
+          ),
           backgroundColor: Colors.green[700],
           duration: const Duration(seconds: 2),
         ),

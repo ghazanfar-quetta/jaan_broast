@@ -14,6 +14,8 @@ import 'package:jaan_broast/features/location/presentation/view_models/location_
 // Add Firebase imports
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+// Import LocationSetupScreen
+import 'package:jaan_broast/features/location/presentation/views/location_setup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -866,10 +868,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _changeLocation() {
-    // Open location change dialog or navigate to location setup
-    print('Change location');
-    // You can navigate back to location setup screen if needed
-    // Navigator.push(context, MaterialPageRoute(builder: (context) => LocationSetupScreen(isAutoLocation: false)));
+    // Navigate to LocationSetupScreen for address change with contact details preserved
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationSetupScreen(
+          isAutoLocation: false, // User can choose manual or auto
+          preserveContactDetails: true, // Add this parameter
+        ),
+      ),
+    ).then((_) {
+      // Reload address when returning from LocationSetupScreen
+      _loadUserAddress();
+    });
   }
 
   void _showAddToCartMessage(FoodItem item) {
