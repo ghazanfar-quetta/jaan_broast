@@ -30,7 +30,6 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
     super.dispose();
   }
 
-  // UPDATED: Sign up with location handling
   void _handleSignUp(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);

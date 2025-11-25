@@ -37,11 +37,8 @@ class _LocationFlowDialogState extends State<LocationFlowDialog> {
   @override
   void initState() {
     super.initState();
-
     final locationVM = Provider.of<LocationViewModel>(context, listen: false);
-
     _flowManager = LocationFlowManager(locationVM);
-
     _initializeFlow();
   }
 
@@ -50,7 +47,6 @@ class _LocationFlowDialogState extends State<LocationFlowDialog> {
 
     _flowManager.addListener(() {
       final state = _flowManager.currentState;
-
       if (state == LocationFlowState.locationSuccess) {
         _navigateToSetupScreen(true);
       } else if (state == LocationFlowState.manualEntry) {
@@ -61,7 +57,6 @@ class _LocationFlowDialogState extends State<LocationFlowDialog> {
 
   void _navigateToSetupScreen(bool isAutoLocation) {
     Navigator.pop(context);
-
     widget.onComplete?.call();
 
     Navigator.pushReplacement(
@@ -79,20 +74,58 @@ class _LocationFlowDialogState extends State<LocationFlowDialog> {
       value: _flowManager,
       child: Consumer<LocationFlowManager>(
         builder: (context, flowManager, child) {
-          return AlertDialog(
-            title: _buildTitle(flowManager),
-            content: _buildContent(flowManager),
-            actions: _buildActions(flowManager),
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            elevation: 8,
+            backgroundColor: Theme.of(context).colorScheme.background,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header with icon
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.location_on,
+                      size: 40,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Title
+                  Text(
+                    'Set Your Location',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onBackground,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Content
+                  _buildContent(flowManager),
+                  const SizedBox(height: 24),
+
+                  // Actions
+                  ..._buildActions(flowManager),
+                ],
+              ),
+            ),
           );
         },
       ),
     );
-  }
-
-  // ----------- UI BUILDERS --------------
-
-  Widget _buildTitle(LocationFlowManager flowManager) {
-    return const Text('📍 Set Your Location');
   }
 
   Widget _buildContent(LocationFlowManager flowManager) {
@@ -101,20 +134,20 @@ class _LocationFlowDialogState extends State<LocationFlowDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.red[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red[200]!),
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange[200]!),
             ),
             child: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-                const SizedBox(width: 8),
+                Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     flowManager.errorMessage,
-                    style: TextStyle(color: Colors.red[700], fontSize: 14),
+                    style: TextStyle(color: Colors.orange[700], fontSize: 14),
                   ),
                 ),
               ],
@@ -130,13 +163,12 @@ class _LocationFlowDialogState extends State<LocationFlowDialog> {
   }
 
   Widget _buildStateContent(LocationFlowManager flowManager) {
-    if (flowManager.currentState == LocationFlowState.requestingPermission ||
-        flowManager.currentState == LocationFlowState.gettingLocation) {
+    if (flowManager.isLoading) {
       return const Row(
         children: [
           SizedBox(
-            width: 20,
-            height: 20,
+            width: 24,
+            height: 24,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           SizedBox(width: 16),
@@ -148,6 +180,8 @@ class _LocationFlowDialogState extends State<LocationFlowDialog> {
     return const Text(
       "Choose how you want to set your delivery location.\n"
       "Use your current location or enter it manually.",
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: 14, height: 1.4),
     );
   }
 
@@ -155,16 +189,56 @@ class _LocationFlowDialogState extends State<LocationFlowDialog> {
     if (flowManager.isLoading) return [];
 
     return [
-      TextButton(
-        onPressed: flowManager.chooseManualEntry,
-        child: const Text("Enter Manually"),
+      // Current Location Button
+      SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: () => _handleCurrentLocation(flowManager),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 2,
+          ),
+          child: const Text(
+            "Use Current Location",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+        ),
       ),
+      const SizedBox(height: 12),
 
-      ElevatedButton(
-        onPressed: () => flowManager.requestPermissionAndFetchLocation(),
-        child: const Text("Use Current Location"),
+      // Manual Entry Button
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: flowManager.chooseManualEntry,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Theme.of(context).primaryColor,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            side: BorderSide(color: Theme.of(context).primaryColor),
+          ),
+          child: const Text(
+            "Enter Manually",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+        ),
       ),
     ];
+  }
+
+  void _handleCurrentLocation(LocationFlowManager flowManager) {
+    if (flowManager.currentState == LocationFlowState.initial) {
+      flowManager.requestPermission();
+    } else {
+      flowManager.getCurrentLocation();
+    }
   }
 
   @override
