@@ -1,4 +1,8 @@
 // lib/features/location/presentation/views/location_setup_screen.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -709,29 +713,53 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
       );
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
 
-      // Prepare address data for saving
-      final addressData = {
-        'fullAddress': _addressController.text,
-        'landmark': _landmarkController.text,
-        'streetNumber': _streetNumberController.text,
-        'addressType': _selectedAddressType,
-        'unitNumber': _unitNumberController.text,
-        'contactName': _nameController.text,
-        'contactPhone': _phoneController.text,
-        'latitude': locationViewModel.latitude,
-        'longitude': locationViewModel.longitude,
-        'timestamp': DateTime.now().toIso8601String(),
+      // Prepare complete user data for saving
+      final userData = {
+        // Address Information
+        'address': {
+          'fullAddress': _addressController.text.trim(),
+          'landmark': _landmarkController.text.trim(),
+          'streetNumber': _streetNumberController.text.trim(),
+          'addressType': _selectedAddressType,
+          'unitNumber': _unitNumberController.text.trim(),
+          'coordinates': {
+            'latitude': locationViewModel.latitude,
+            'longitude': locationViewModel.longitude,
+          },
+          'isAutoLocation': locationViewModel.isAutoLocation,
+        },
+
+        // Personal Information
+        'personalInfo': {
+          'fullName': _nameController.text.trim(),
+          'phoneNumber': _phoneController.text.trim(),
+        },
+
+        // App & System Data
+        'appData': {
+          'isFirstLoginCompleted': true,
+          'locationSetupCompleted': true,
+          'lastUpdated': DateTime.now().toIso8601String(),
+          'accountCreatedAt': DateTime.now().toIso8601String(),
+        },
+
+        // Delivery Preferences (default values)
+        'deliveryPreferences': {
+          'saveAddressForFuture': true,
+          'contactlessDelivery': false,
+          'deliveryInstructions': '',
+        },
       };
 
       // Update location with the entered address
       locationViewModel.updateLocationManually(
-        _addressController.text,
+        _addressController.text.trim(),
         lat: locationViewModel.latitude,
         lng: locationViewModel.longitude,
       );
 
-      // Save address data to Firebase
-      _saveAddressToFirebase(addressData);
+      // Save complete user data to Firebase
+      _saveUserDataToFirebase(userData);
 
       // Mark first login as completed
       authViewModel.completeFirstLogin();
@@ -741,7 +769,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Address saved successfully!'),
+          content: const Text('Profile setup completed successfully!'),
           backgroundColor: Colors.green[700],
           duration: const Duration(seconds: 2),
         ),
@@ -749,26 +777,70 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     }
   }
 
-  void _saveAddressToFirebase(Map<String, dynamic> addressData) async {
+  void _saveUserDataToFirebase(Map<String, dynamic> userData) async {
     try {
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      // Get current user directly from Firebase Auth
+      final currentUser = FirebaseAuth.instance.currentUser;
 
-      // TODO: Implement Firebase Firestore saving
-      // This will depend on your Firebase setup and user authentication
-      /*
-      await FirebaseFirestore.instance
+      if (currentUser == null) {
+        print('❌ No user logged in. Cannot save data to Firebase.');
+
+        // Show error message to user
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please log in to save your data'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Initialize Firebase Firestore
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      // Save user data to Firestore
+      await firestore
           .collection('users')
-          .doc(authViewModel.currentUser?.uid)
+          .doc(currentUser.uid)
+          .set(userData, SetOptions(merge: true));
+
+      // Also save address as a separate document for easy querying
+      await firestore
+          .collection('users')
+          .doc(currentUser.uid)
           .collection('addresses')
           .doc('primary')
-          .set(addressData);
-      */
+          .set({
+            ...userData['address'],
+            'isPrimary': true,
+            'createdAt': DateTime.now().toIso8601String(),
+          });
 
-      print('Address data to save: $addressData');
-      // For now, we'll just print the data. Implement Firebase integration as needed.
+      print('✅ User data saved successfully to Firebase');
+
+      // Print confirmation
+      print('📝 User Data saved to Firebase:');
+      print('👤 User ID: ${currentUser.uid}');
+      print('📧 User Email: ${currentUser.email}');
+      print('📍 Address: ${userData['address']['fullAddress']}');
+      print('📞 Phone: ${userData['personalInfo']['phoneNumber']}');
+      print('👨‍💼 Name: ${userData['personalInfo']['fullName']}');
     } catch (e) {
-      print('Error saving address to Firebase: $e');
-      // You might want to show an error message to the user
+      print('❌ Error saving user data to Firebase: $e');
+
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save data: $e'),
+            backgroundColor: Colors.red[700],
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
