@@ -1,3 +1,4 @@
+// lib/core/widgets/food_item_card.dart
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import '../utils/screen_utils.dart';
@@ -10,8 +11,10 @@ class FoodItemCard extends StatelessWidget {
   final String imageUrl;
   final VoidCallback onTap;
   final VoidCallback? onAddToCart;
+  final VoidCallback? onToggleFavorite;
+  final bool isFavorite;
   final int selectedPortionIndex;
-  final bool isCompact; // Add this for horizontal list
+  final bool isCompact;
 
   const FoodItemCard({
     Key? key,
@@ -21,8 +24,10 @@ class FoodItemCard extends StatelessWidget {
     required this.imageUrl,
     required this.onTap,
     this.onAddToCart,
+    this.onToggleFavorite,
+    this.isFavorite = false,
     this.selectedPortionIndex = 0,
-    this.isCompact = false, // Default to regular size
+    this.isCompact = false,
   }) : super(key: key);
 
   @override
@@ -40,7 +45,7 @@ class FoodItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         child: Padding(
           padding: isCompact
-              ? const EdgeInsets.all(8.0) // Compact padding
+              ? const EdgeInsets.all(8.0)
               : ScreenUtils.responsivePadding(
                   context,
                   mobile: 12,
@@ -50,10 +55,10 @@ class FoodItemCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Food Image - Responsive size
+              // Food Image
               Container(
                 width: isCompact
-                    ? 60 // Compact image size
+                    ? 60
                     : ScreenUtils.responsiveValue(
                         context,
                         mobile: 70,
@@ -61,7 +66,7 @@ class FoodItemCard extends StatelessWidget {
                         desktop: 100,
                       ),
                 height: isCompact
-                    ? 60 // Compact image size
+                    ? 60
                     : ScreenUtils.responsiveValue(
                         context,
                         mobile: 70,
@@ -84,7 +89,7 @@ class FoodItemCard extends StatelessWidget {
                     ? Icon(
                         Icons.fastfood,
                         size: isCompact
-                            ? 24 // Compact icon size
+                            ? 24
                             : ScreenUtils.responsiveValue(
                                 context,
                                 mobile: 30,
@@ -98,7 +103,7 @@ class FoodItemCard extends StatelessWidget {
 
               SizedBox(
                 width: isCompact
-                    ? 8 // Compact spacing
+                    ? 8
                     : ScreenUtils.responsiveValue(
                         context,
                         mobile: 12,
@@ -107,59 +112,62 @@ class FoodItemCard extends StatelessWidget {
                       ),
               ),
 
-              // Food Details - Compact layout
+              // Food Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min, // Important: don't expand
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      name,
-                      style: TextStyle(
-                        fontSize: isCompact
-                            ? AppConstants
-                                  .captionTextSize // Compact font
-                            : ScreenUtils.responsiveFontSize(
-                                context,
-                                mobile: AppConstants.headingSizeSmall - 2,
-                                tablet: AppConstants.headingSizeSmall,
-                                desktop: AppConstants.headingSizeSmall,
-                              ),
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(
-                      height: isCompact
-                          ? 2
-                          : ScreenUtils.responsiveValue(
+                    // Name and description in a column to allow proper sizing
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          name,
+                          style: TextStyle(
+                            fontSize: isCompact
+                                ? AppConstants.captionTextSize
+                                : ScreenUtils.responsiveFontSize(
+                                    context,
+                                    mobile: AppConstants.headingSizeSmall - 2,
+                                    tablet: AppConstants.headingSizeSmall,
+                                    desktop: AppConstants.headingSizeSmall,
+                                  ),
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(
+                          height: isCompact
+                              ? 2
+                              : ScreenUtils.responsiveValue(
+                                  context,
+                                  mobile: 2,
+                                  tablet: 4,
+                                  desktop: 4,
+                                ),
+                        ),
+                        Text(
+                          description,
+                          style: TextStyle(
+                            fontSize: isCompact
+                                ? AppConstants.captionTextSize - 2
+                                : ScreenUtils.responsiveFontSize(
+                                    context,
+                                    mobile: AppConstants.captionTextSize - 2,
+                                    tablet: AppConstants.captionTextSize,
+                                    desktop: AppConstants.captionTextSize,
+                                  ),
+                            color: Theme.of(
                               context,
-                              mobile: 2,
-                              tablet: 4,
-                              desktop: 4,
-                            ),
-                    ),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: isCompact
-                            ? AppConstants.captionTextSize -
-                                  2 // Very compact
-                            : ScreenUtils.responsiveFontSize(
-                                context,
-                                mobile: AppConstants.captionTextSize - 2,
-                                tablet: AppConstants.captionTextSize,
-                                desktop: AppConstants.captionTextSize,
-                              ),
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                      maxLines: isCompact
-                          ? 1
-                          : (isMobile ? 2 : 3), // Fewer lines in compact
-                      overflow: TextOverflow.ellipsis,
+                            ).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                          maxLines: isCompact ? 1 : (isMobile ? 2 : 3),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
 
                     if (!isCompact)
@@ -172,7 +180,6 @@ class FoodItemCard extends StatelessWidget {
                         ),
                       ),
 
-                    // Portion Selection - Only show in regular mode or simplified
                     if (!isCompact)
                       _buildPortionSelection(context, selectedPortion),
 
@@ -186,44 +193,87 @@ class FoodItemCard extends StatelessWidget {
                         ),
                       ),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          selectedPortion.formattedPrice,
-                          style: TextStyle(
-                            fontSize: isCompact
-                                ? AppConstants
-                                      .captionTextSize // Compact price
-                                : ScreenUtils.responsiveFontSize(
-                                    context,
-                                    mobile: AppConstants.bodyTextSize - 1,
-                                    tablet: AppConstants.bodyTextSize,
-                                    desktop: AppConstants.bodyTextSize,
-                                  ),
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                        ),
-                        if (onAddToCart != null)
-                          IconButton(
-                            onPressed: onAddToCart,
-                            icon: Icon(
-                              Icons.add_circle,
-                              color: Theme.of(context).primaryColor,
-                              size: isCompact
-                                  ? 20 // Compact icon
-                                  : ScreenUtils.responsiveValue(
-                                      context,
-                                      mobile: 26,
-                                      tablet: 28,
-                                      desktop: 30,
-                                    ),
+                    // Bottom row with price and action buttons
+                    Container(
+                      width: double.infinity,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Price - Flexible to prevent overflow
+                          Flexible(
+                            child: Text(
+                              selectedPortion.formattedPrice,
+                              style: TextStyle(
+                                fontSize: isCompact
+                                    ? AppConstants.captionTextSize
+                                    : ScreenUtils.responsiveFontSize(
+                                        context,
+                                        mobile: AppConstants.bodyTextSize - 1,
+                                        tablet: AppConstants.bodyTextSize,
+                                        desktop: AppConstants.bodyTextSize,
+                                      ),
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
                           ),
-                      ],
+
+                          // Action buttons container with fixed width
+                          Container(
+                            width: isCompact
+                                ? 50
+                                : 70, // Fixed width for buttons
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                // Favorite Icon Button - smaller in compact mode
+                                if (onToggleFavorite != null)
+                                  Container(
+                                    width: isCompact ? 20 : 26,
+                                    height: isCompact ? 20 : 26,
+                                    child: IconButton(
+                                      onPressed: onToggleFavorite,
+                                      icon: Icon(
+                                        isFavorite
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        size: isCompact ? 16 : 20,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      color: isFavorite
+                                          ? Colors.red
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withOpacity(0.6),
+                                    ),
+                                  ),
+
+                                SizedBox(width: isCompact ? 4 : 6),
+
+                                // Add to Cart Icon Button - smaller in compact mode
+                                if (onAddToCart != null)
+                                  Container(
+                                    width: isCompact ? 20 : 26,
+                                    height: isCompact ? 20 : 26,
+                                    child: IconButton(
+                                      onPressed: onAddToCart,
+                                      icon: Icon(
+                                        Icons.add_circle,
+                                        size: isCompact ? 16 : 20,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

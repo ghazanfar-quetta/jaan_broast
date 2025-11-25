@@ -1,3 +1,4 @@
+// lib/features/home/presentation/view_models/home_view_model.dart
 import 'package:flutter/material.dart';
 import '../../domain/models/food_category.dart';
 import '../../domain/models/food_item.dart';
@@ -5,21 +6,64 @@ import '../../domain/models/food_item.dart';
 class HomeViewModel with ChangeNotifier {
   List<FoodCategory> _categories = [];
   List<FoodItem> _menuItems = [];
-  List<FoodItem> _allMenuItems = []; // Keep original list for filtering
+  List<FoodItem> _allMenuItems = [];
   String _selectedCategoryId = '';
   String _searchQuery = '';
   bool _isLoading = false;
   String _error = '';
+  List<String> _favoriteItemIds = [];
 
+  // Getters
   List<FoodCategory> get categories => _categories;
   List<FoodItem> get menuItems => _menuItems;
-  String get selectedCategoryId => _selectedCategoryId;
+  List<String> get favoriteItemIds => _favoriteItemIds;
+  String get selectedCategoryId => _selectedCategoryId; // Make sure this exists
   bool get isLoading => _isLoading;
   String get error => _error;
 
+  // Toggle favorite status
+  void toggleFavorite(String itemId) {
+    final itemIndex = _allMenuItems.indexWhere((item) => item.id == itemId);
+    if (itemIndex != -1) {
+      final isCurrentlyFavorite = _favoriteItemIds.contains(itemId);
+
+      if (isCurrentlyFavorite) {
+        _favoriteItemIds.remove(itemId);
+      } else {
+        _favoriteItemIds.add(itemId);
+      }
+
+      // Update the item's favorite status
+      _allMenuItems[itemIndex] = _allMenuItems[itemIndex].copyWith(
+        isFavorite: !isCurrentlyFavorite,
+      );
+
+      // Update filtered menu items
+      _applyFilters();
+
+      notifyListeners();
+
+      print(
+        '${isCurrentlyFavorite ? 'Removed from' : 'Added to'} favorites: ${_allMenuItems[itemIndex].name}',
+      );
+    }
+  }
+
+  // Check if item is favorite
+  bool isFavorite(String itemId) {
+    return _favoriteItemIds.contains(itemId);
+  }
+
+  // Get favorite items
+  List<FoodItem> getFavoriteItems() {
+    return _allMenuItems
+        .where((item) => _favoriteItemIds.contains(item.id))
+        .toList();
+  }
+
   void clearSearch() {
     _searchQuery = '';
-    _applyFilters(); // Reapply filters to show all items
+    _applyFilters();
     notifyListeners();
   }
 
@@ -30,16 +74,10 @@ class HomeViewModel with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simulate API call delay
       await Future.delayed(const Duration(seconds: 1));
-
-      // Load mock categories
       _loadCategories();
-
-      // Load mock menu items
       _loadMenuItems();
 
-      // Select first category by default
       if (_categories.isNotEmpty) {
         _selectedCategoryId = _categories.first.id;
       }
@@ -53,7 +91,6 @@ class HomeViewModel with ChangeNotifier {
     }
   }
 
-  // Load categories
   void _loadCategories() {
     _categories = [
       FoodCategory(
@@ -109,7 +146,6 @@ class HomeViewModel with ChangeNotifier {
     ];
   }
 
-  // Load menu items
   void _loadMenuItems() {
     _allMenuItems = [
       FoodItem(
@@ -131,6 +167,7 @@ class HomeViewModel with ChangeNotifier {
         preparationTime: 25,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        isFavorite: false,
       ),
       FoodItem(
         id: '2',
@@ -150,6 +187,7 @@ class HomeViewModel with ChangeNotifier {
         preparationTime: 30,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        isFavorite: false,
       ),
       FoodItem(
         id: '3',
@@ -166,6 +204,7 @@ class HomeViewModel with ChangeNotifier {
         preparationTime: 20,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        isFavorite: false,
       ),
       FoodItem(
         id: '4',
@@ -182,6 +221,7 @@ class HomeViewModel with ChangeNotifier {
         preparationTime: 35,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        isFavorite: false,
       ),
     ];
 
@@ -251,14 +291,11 @@ class HomeViewModel with ChangeNotifier {
 
   // Food item actions
   void showFoodItemDetails(FoodItem item) {
-    // This will be handled by navigation in the UI
     print('Showing details for: ${item.name}');
   }
 
   void addToCart(FoodItem item, {int portionIndex = 0}) {
     final selectedPortion = item.portions[portionIndex];
-
-    // Show success message (this will be handled by the UI)
     print(
       'Added to cart: ${item.name} - ${selectedPortion.size} - ${selectedPortion.formattedPrice}',
     );

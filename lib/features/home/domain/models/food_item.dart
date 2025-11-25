@@ -1,3 +1,4 @@
+// lib/features/home/domain/models/food_item.dart
 class FoodItem {
   final String id;
   final String name;
@@ -5,14 +6,15 @@ class FoodItem {
   final List<FoodPortion> portions;
   final String imageUrl;
   final String category;
-  final List<String> tags; // For search and filtering
+  final List<String> tags;
   final bool isAvailable;
-  final bool isFeatured; // For featured items on home screen
+  final bool isFeatured;
   final double? rating;
   final int? ratingCount;
-  final int? preparationTime; // in minutes
+  final int? preparationTime;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isFavorite; // Add this field
 
   FoodItem({
     required this.id,
@@ -29,10 +31,10 @@ class FoodItem {
     this.preparationTime,
     required this.createdAt,
     required this.updatedAt,
+    this.isFavorite = false, // Default to false
   });
 
   factory FoodItem.fromMap(Map<String, dynamic> map) {
-    // Handle portions from backend
     final List<dynamic> portionsData = map['portions'] ?? [];
     final List<FoodPortion> portions = portionsData.isNotEmpty
         ? portionsData.map((portion) => FoodPortion.fromMap(portion)).toList()
@@ -43,7 +45,6 @@ class FoodItem {
             ),
           ];
 
-    // Handle timestamps
     final createdAt = map['createdAt'] != null
         ? DateTime.parse(map['createdAt'])
         : DateTime.now();
@@ -52,27 +53,21 @@ class FoodItem {
         : DateTime.now();
 
     return FoodItem(
-      id:
-          map['id'] ??
-          map['documentId'] ??
-          '', // Support both id and documentId
+      id: map['id'] ?? map['documentId'] ?? '',
       name: map['name'] ?? '',
       description: map['description'] ?? '',
       portions: portions,
-      imageUrl:
-          map['imageUrl'] ?? map['image'] ?? '', // Support both field names
+      imageUrl: map['imageUrl'] ?? map['image'] ?? '',
       category: map['category'] ?? '',
       tags: List<String>.from(map['tags'] ?? []),
       isAvailable: map['isAvailable'] ?? true,
       isFeatured: map['isFeatured'] ?? false,
       rating: (map['rating'] ?? 0.0).toDouble(),
       ratingCount: map['ratingCount'] ?? 0,
-      preparationTime:
-          map['preparationTime'] ??
-          map['cookTime'] ??
-          0, // Support both field names
+      preparationTime: map['preparationTime'] ?? map['cookTime'] ?? 0,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      isFavorite: map['isFavorite'] ?? false, // Add this
     );
   }
 
@@ -92,7 +87,29 @@ class FoodItem {
       'preparationTime': preparationTime,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'isFavorite': isFavorite, // Add this
     };
+  }
+
+  // Add copyWith method for updating favorite status
+  FoodItem copyWith({bool? isFavorite}) {
+    return FoodItem(
+      id: id,
+      name: name,
+      description: description,
+      portions: portions,
+      imageUrl: imageUrl,
+      category: category,
+      tags: tags,
+      isAvailable: isAvailable,
+      isFeatured: isFeatured,
+      rating: rating,
+      ratingCount: ratingCount,
+      preparationTime: preparationTime,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      isFavorite: isFavorite ?? this.isFavorite,
+    );
   }
 
   // Helper methods

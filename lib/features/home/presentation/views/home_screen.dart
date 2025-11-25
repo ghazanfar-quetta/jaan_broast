@@ -70,6 +70,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload address when the screen becomes active again
+    _loadUserAddress();
+  }
+
   Future<void> _initializeData() async {
     await _viewModel.loadInitialData();
   }
@@ -108,15 +115,19 @@ class _HomeScreenState extends State<HomeScreen> {
             listen: false,
           );
           locationViewModel.updateLocationManually(address);
+
+          print('✅ Address loaded from Firebase: $address');
         } else {
           setState(() {
             _userAddress = 'Address not set';
           });
+          print('ℹ️ No address found in Firebase');
         }
       } else {
         setState(() {
           _userAddress = 'User data not found';
         });
+        print('❌ User document not found in Firebase');
       }
     } catch (e) {
       print('❌ Error loading user address: $e');
@@ -706,6 +717,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   portions: item.portions,
                   imageUrl: item.imageUrl,
                   isCompact: true,
+                  isFavorite: item.isFavorite,
                   onTap: () {
                     _viewModel.showFoodItemDetails(item);
                     _openFoodDetails(item);
@@ -713,6 +725,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   onAddToCart: () {
                     _viewModel.addToCart(item);
                     _showAddToCartMessage(item);
+                  },
+                  onToggleFavorite: () {
+                    _viewModel.toggleFavorite(item.id); // Add this
                   },
                 ),
               );
@@ -824,6 +839,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 description: item.description,
                 portions: item.portions,
                 imageUrl: item.imageUrl,
+                isFavorite: item.isFavorite,
                 onTap: () {
                   _viewModel.showFoodItemDetails(item);
                   _openFoodDetails(item);
@@ -831,6 +847,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onAddToCart: () {
                   _viewModel.addToCart(item);
                   _showAddToCartMessage(item);
+                },
+                onToggleFavorite: () {
+                  _viewModel.toggleFavorite(item.id); // Add this
                 },
               ),
             );
