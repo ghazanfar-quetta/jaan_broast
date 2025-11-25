@@ -1,3 +1,4 @@
+//lib/features/home/presentation/views/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../core/constants/app_constants.dart';
@@ -10,6 +11,9 @@ import '../view_models/home_view_model.dart';
 // Add this import for FoodItem
 import '../../domain/models/food_item.dart';
 import 'package:jaan_broast/features/location/presentation/view_models/location_view_model.dart';
+// Add Firebase imports
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -23,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late HomeViewModel _viewModel;
   int _currentIndex = 0; // Track current bottom nav index
   bool _isInitialized = false;
+  String _userAddress = 'Loading...'; // Default address
 
   // Bottom navigation items
   final List<BottomNavigationBarItem> _bottomNavItems = [
@@ -36,11 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
       activeIcon: Icon(Icons.favorite),
       label: 'Favorites',
     ),
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.replay_outlined),
-      activeIcon: Icon(Icons.replay),
-      label: 'Order Again',
-    ),
+
     const BottomNavigationBarItem(
       icon: Icon(Icons.history_outlined),
       activeIcon: Icon(Icons.history),
@@ -60,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _viewModel = Provider.of<HomeViewModel>(context, listen: false);
       _initializeData();
+      _loadUserAddress(); // Load address from Firestore
       setState(() {
         _isInitialized = true;
       });
@@ -68,6 +70,58 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _initializeData() async {
     await _viewModel.loadInitialData();
+  }
+
+  // New method to load user address from Firestore
+  Future<void> _loadUserAddress() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        setState(() {
+          _userAddress = 'Please log in';
+        });
+        return;
+      }
+
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      // Get user document
+      final userDoc = await firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        final address = userData?['address']?['fullAddress'] as String?;
+
+        if (address != null && address.isNotEmpty) {
+          setState(() {
+            _userAddress = address;
+          });
+
+          // Also update the LocationViewModel with the fetched address
+          final locationViewModel = Provider.of<LocationViewModel>(
+            context,
+            listen: false,
+          );
+          locationViewModel.updateLocationManually(address);
+        } else {
+          setState(() {
+            _userAddress = 'Address not set';
+          });
+        }
+      } else {
+        setState(() {
+          _userAddress = 'User data not found';
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading user address: $e');
+      setState(() {
+        _userAddress = 'Error loading address';
+      });
+    }
   }
 
   @override
@@ -150,7 +204,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPlaceholderScreen() {
     final List<String> screenTitles = [
       'Favorites',
-      'Order Again',
       'Order History',
       'Settings',
     ];
@@ -497,7 +550,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Expanded(
               child: Text(
-                locationViewModel.currentLocation,
+                _userAddress, // Use the address from Firestore
                 style: TextStyle(
                   fontSize: ScreenUtils.responsiveFontSize(
                     context,
@@ -813,8 +866,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _changeLocation() {
-    // Open location change dialog
+    // Open location change dialog or navigate to location setup
     print('Change location');
+    // You can navigate back to location setup screen if needed
+    // Navigator.push(context, MaterialPageRoute(builder: (context) => LocationSetupScreen(isAutoLocation: false)));
   }
 
   void _showAddToCartMessage(FoodItem item) {
