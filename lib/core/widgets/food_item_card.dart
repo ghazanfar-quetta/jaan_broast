@@ -45,33 +45,35 @@ class FoodItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         child: Padding(
           padding: isCompact
-              ? const EdgeInsets.all(8.0)
+              ? const EdgeInsets.all(
+                  12.0,
+                ) // Increased padding for larger images
               : ScreenUtils.responsivePadding(
                   context,
-                  mobile: 12,
-                  tablet: 16,
-                  desktop: 20,
+                  mobile: 16,
+                  tablet: 20,
+                  desktop: 24,
                 ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Food Image
+              // Food Image - INCREASED SIZE
               Container(
                 width: isCompact
-                    ? 60
+                    ? 80 // Increased from 60
                     : ScreenUtils.responsiveValue(
                         context,
-                        mobile: 70,
-                        tablet: 90,
-                        desktop: 100,
+                        mobile: 100, // Increased from 70
+                        tablet: 120, // Increased from 90
+                        desktop: 140, // Increased from 100
                       ),
                 height: isCompact
-                    ? 60
+                    ? 80 // Increased from 60
                     : ScreenUtils.responsiveValue(
                         context,
-                        mobile: 70,
-                        tablet: 90,
-                        desktop: 100,
+                        mobile: 100, // Increased from 70
+                        tablet: 120, // Increased from 90
+                        desktop: 140, // Increased from 100
                       ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(
@@ -89,12 +91,12 @@ class FoodItemCard extends StatelessWidget {
                     ? Icon(
                         Icons.fastfood,
                         size: isCompact
-                            ? 24
+                            ? 32 // Increased from 24
                             : ScreenUtils.responsiveValue(
                                 context,
-                                mobile: 30,
-                                tablet: 35,
-                                desktop: 40,
+                                mobile: 40, // Increased from 30
+                                tablet: 45, // Increased from 35
+                                desktop: 50, // Increased from 40
                               ),
                         color: Theme.of(context).primaryColor,
                       )
@@ -103,12 +105,12 @@ class FoodItemCard extends StatelessWidget {
 
               SizedBox(
                 width: isCompact
-                    ? 8
+                    ? 12 // Increased from 8
                     : ScreenUtils.responsiveValue(
                         context,
-                        mobile: 12,
-                        tablet: 16,
-                        desktop: 20,
+                        mobile: 16, // Increased from 12
+                        tablet: 20, // Increased from 16
+                        desktop: 24, // Increased from 20
                       ),
               ),
 
@@ -118,7 +120,7 @@ class FoodItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Name and description in a column to allow proper sizing
+                    // Name and description
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -127,12 +129,13 @@ class FoodItemCard extends StatelessWidget {
                           name,
                           style: TextStyle(
                             fontSize: isCompact
-                                ? AppConstants.captionTextSize
+                                ? AppConstants
+                                      .bodyTextSize // Increased from caption
                                 : ScreenUtils.responsiveFontSize(
                                     context,
-                                    mobile: AppConstants.headingSizeSmall - 2,
-                                    tablet: AppConstants.headingSizeSmall,
-                                    desktop: AppConstants.headingSizeSmall,
+                                    mobile: AppConstants.headingSizeSmall,
+                                    tablet: AppConstants.headingSizeSmall + 2,
+                                    desktop: AppConstants.headingSizeSmall + 4,
                                   ),
                             fontWeight: FontWeight.bold,
                           ),
@@ -141,30 +144,32 @@ class FoodItemCard extends StatelessWidget {
                         ),
                         SizedBox(
                           height: isCompact
-                              ? 2
+                              ? 4 // Increased from 2
                               : ScreenUtils.responsiveValue(
                                   context,
-                                  mobile: 2,
-                                  tablet: 4,
-                                  desktop: 4,
+                                  mobile: 4,
+                                  tablet: 6,
+                                  desktop: 8,
                                 ),
                         ),
                         Text(
                           description,
                           style: TextStyle(
                             fontSize: isCompact
-                                ? AppConstants.captionTextSize - 2
+                                ? AppConstants.captionTextSize
                                 : ScreenUtils.responsiveFontSize(
                                     context,
-                                    mobile: AppConstants.captionTextSize - 2,
-                                    tablet: AppConstants.captionTextSize,
-                                    desktop: AppConstants.captionTextSize,
+                                    mobile: AppConstants.bodyTextSize - 2,
+                                    tablet: AppConstants.bodyTextSize,
+                                    desktop: AppConstants.bodyTextSize + 2,
                                   ),
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurface.withOpacity(0.7),
                           ),
-                          maxLines: isCompact ? 1 : (isMobile ? 2 : 3),
+                          maxLines: isCompact
+                              ? 2 // Increased from 1
+                              : (isMobile ? 3 : 4), // Increased lines
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -174,9 +179,9 @@ class FoodItemCard extends StatelessWidget {
                       SizedBox(
                         height: ScreenUtils.responsiveValue(
                           context,
-                          mobile: 6,
-                          tablet: 8,
-                          desktop: 8,
+                          mobile: 8,
+                          tablet: 12,
+                          desktop: 16,
                         ),
                       ),
 
@@ -187,9 +192,9 @@ class FoodItemCard extends StatelessWidget {
                       SizedBox(
                         height: ScreenUtils.responsiveValue(
                           context,
-                          mobile: 6,
-                          tablet: 8,
-                          desktop: 8,
+                          mobile: 8,
+                          tablet: 12,
+                          desktop: 16,
                         ),
                       ),
 
@@ -200,18 +205,19 @@ class FoodItemCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Price - Flexible to prevent overflow
+                          // Price
                           Flexible(
                             child: Text(
                               selectedPortion.formattedPrice,
                               style: TextStyle(
                                 fontSize: isCompact
-                                    ? AppConstants.captionTextSize
+                                    ? AppConstants
+                                          .bodyTextSize // Increased from caption
                                     : ScreenUtils.responsiveFontSize(
                                         context,
-                                        mobile: AppConstants.bodyTextSize - 1,
-                                        tablet: AppConstants.bodyTextSize,
-                                        desktop: AppConstants.bodyTextSize,
+                                        mobile: AppConstants.bodyTextSize,
+                                        tablet: AppConstants.bodyTextSize + 2,
+                                        desktop: AppConstants.bodyTextSize + 4,
                                       ),
                                 fontWeight: FontWeight.bold,
                                 color: Theme.of(context).primaryColor,
@@ -221,26 +227,28 @@ class FoodItemCard extends StatelessWidget {
                             ),
                           ),
 
-                          // Action buttons container with fixed width
+                          // Action buttons
                           Container(
-                            width: isCompact
-                                ? 50
-                                : 70, // Fixed width for buttons
+                            width: isCompact ? 60 : 80, // Increased width
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                // Favorite Icon Button - smaller in compact mode
+                                // Favorite Icon Button
                                 if (onToggleFavorite != null)
                                   Container(
-                                    width: isCompact ? 20 : 26,
-                                    height: isCompact ? 20 : 26,
+                                    width: isCompact
+                                        ? 24
+                                        : 30, // Increased size
+                                    height: isCompact ? 24 : 30,
                                     child: IconButton(
                                       onPressed: onToggleFavorite,
                                       icon: Icon(
                                         isFavorite
                                             ? Icons.favorite
                                             : Icons.favorite_border,
-                                        size: isCompact ? 16 : 20,
+                                        size: isCompact
+                                            ? 18
+                                            : 24, // Increased size
                                       ),
                                       padding: EdgeInsets.zero,
                                       color: isFavorite
@@ -252,18 +260,23 @@ class FoodItemCard extends StatelessWidget {
                                     ),
                                   ),
 
-                                SizedBox(width: isCompact ? 4 : 6),
-
-                                // Add to Cart Icon Button - smaller in compact mode
+                                SizedBox(
+                                  width: isCompact ? 6 : 8,
+                                ), // Increased spacing
+                                // Add to Cart Icon Button
                                 if (onAddToCart != null)
                                   Container(
-                                    width: isCompact ? 20 : 26,
-                                    height: isCompact ? 20 : 26,
+                                    width: isCompact
+                                        ? 24
+                                        : 30, // Increased size
+                                    height: isCompact ? 24 : 30,
                                     child: IconButton(
                                       onPressed: onAddToCart,
                                       icon: Icon(
                                         Icons.add_circle,
-                                        size: isCompact ? 16 : 20,
+                                        size: isCompact
+                                            ? 18
+                                            : 24, // Increased size
                                       ),
                                       padding: EdgeInsets.zero,
                                       color: Theme.of(context).primaryColor,

@@ -485,9 +485,9 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               height: ScreenUtils.responsiveValue(
                 context,
-                mobile: 16,
-                tablet: 20,
-                desktop: 24,
+                mobile: 20,
+                tablet: 24,
+                desktop: 28,
               ),
             ),
 
@@ -502,31 +502,20 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               height: ScreenUtils.responsiveValue(
                 context,
-                mobile: 20,
-                tablet: 24,
-                desktop: 28,
+                mobile: 24,
+                tablet: 28,
+                desktop: 32,
               ),
             ),
 
-            // Categories Section
+            // Categories Section with Images
             _buildCategoriesSection(viewModel),
             SizedBox(
               height: ScreenUtils.responsiveValue(
                 context,
-                mobile: 20,
-                tablet: 24,
-                desktop: 28,
-              ),
-            ),
-
-            // Popular Items Section
-            _buildPopularItemsSection(viewModel),
-            SizedBox(
-              height: ScreenUtils.responsiveValue(
-                context,
-                mobile: 20,
-                tablet: 24,
-                desktop: 28,
+                mobile: 24,
+                tablet: 28,
+                desktop: 32,
               ),
             ),
 
@@ -622,17 +611,17 @@ class _HomeScreenState extends State<HomeScreen> {
         SizedBox(
           height: ScreenUtils.responsiveValue(
             context,
-            mobile: 12,
-            tablet: 16,
-            desktop: 20,
+            mobile: 16,
+            tablet: 20,
+            desktop: 24,
           ),
         ),
         SizedBox(
           height: ScreenUtils.responsiveValue(
             context,
-            mobile: 45,
-            tablet: 50,
-            desktop: 55,
+            mobile: 100, // Increased height for circular images
+            tablet: 110,
+            desktop: 120,
           ),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
@@ -641,95 +630,12 @@ class _HomeScreenState extends State<HomeScreen> {
               final category = viewModel.categories[index];
               return FoodCategoryCard(
                 name: category.name,
+                imageUrl: category.imageUrl,
                 isSelected: viewModel.selectedCategoryId == category.id,
                 onTap: () {
                   _clearSearch();
                   _viewModel.selectCategory(category.id);
                 },
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPopularItemsSection(HomeViewModel viewModel) {
-    final popularItems = viewModel.getPopularItems();
-    if (popularItems.isEmpty) return const SizedBox();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Popular Items',
-          style: TextStyle(
-            fontSize: ScreenUtils.responsiveFontSize(
-              context,
-              mobile: AppConstants.headingSizeMedium,
-              tablet: AppConstants.headingSizeMedium,
-              desktop: AppConstants.headingSizeLarge,
-            ),
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onBackground,
-          ),
-        ),
-        SizedBox(
-          height: ScreenUtils.responsiveValue(
-            context,
-            mobile: 12,
-            tablet: 16,
-            desktop: 20,
-          ),
-        ),
-        SizedBox(
-          height: ScreenUtils.responsiveValue(
-            context,
-            mobile: 140,
-            tablet: 150,
-            desktop: 160,
-          ),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: popularItems.length,
-            itemBuilder: (context, index) {
-              final item = popularItems[index];
-              return Container(
-                width: ScreenUtils.responsiveValue(
-                  context,
-                  mobile: 240,
-                  tablet: 260,
-                  desktop: 280,
-                ),
-                margin: EdgeInsets.only(
-                  right: index == popularItems.length - 1
-                      ? 0
-                      : ScreenUtils.responsiveValue(
-                          context,
-                          mobile: 12,
-                          tablet: 16,
-                          desktop: 20,
-                        ),
-                ),
-                child: FoodItemCard(
-                  name: item.name,
-                  description: item.description,
-                  portions: item.portions,
-                  imageUrl: item.imageUrl,
-                  isCompact: true,
-                  isFavorite: item.isFavorite,
-                  onTap: () {
-                    _viewModel.showFoodItemDetails(item);
-                    _openFoodDetails(item);
-                  },
-                  onAddToCart: () {
-                    _viewModel.addToCart(item);
-                    _showAddToCartMessage(item);
-                  },
-                  onToggleFavorite: () {
-                    _viewModel.toggleFavorite(item.id); // Add this
-                  },
-                ),
               );
             },
           ),

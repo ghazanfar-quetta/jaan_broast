@@ -1,9 +1,10 @@
+// lib/features/home/domain/models/food_category.dart
 class FoodCategory {
   final String id;
   final String name;
   final String description;
-  final String imageUrl;
-  final int displayOrder; // For sorting categories
+  final String imageUrl; // Add this for category images
+  final int displayOrder;
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -12,30 +13,28 @@ class FoodCategory {
     required this.id,
     required this.name,
     required this.description,
-    required this.imageUrl,
-    this.displayOrder = 0,
-    this.isActive = true,
+    required this.imageUrl, // Add this
+    required this.displayOrder,
+    required this.isActive,
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory FoodCategory.fromMap(Map<String, dynamic> map) {
-    final createdAt = map['createdAt'] != null
-        ? DateTime.parse(map['createdAt'])
-        : DateTime.now();
-    final updatedAt = map['updatedAt'] != null
-        ? DateTime.parse(map['updatedAt'])
-        : DateTime.now();
-
     return FoodCategory(
-      id: map['id'] ?? map['documentId'] ?? '',
+      id: map['id'] ?? '',
       name: map['name'] ?? '',
       description: map['description'] ?? '',
-      imageUrl: map['imageUrl'] ?? '',
+      imageUrl:
+          map['imageUrl'] ?? map['image'] ?? '', // Support both field names
       displayOrder: map['displayOrder'] ?? 0,
       isActive: map['isActive'] ?? true,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'])
+          : DateTime.now(),
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'])
+          : DateTime.now(),
     );
   }
 

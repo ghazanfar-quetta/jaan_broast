@@ -91,13 +91,14 @@ class HomeViewModel with ChangeNotifier {
     }
   }
 
+  // In your HomeViewModel, update the _loadCategories method:
   void _loadCategories() {
     _categories = [
       FoodCategory(
         id: '1',
         name: 'Birvani',
         description: 'Various types of biryanis',
-        imageUrl: '',
+        imageUrl: '', // You can add image URLs later
         displayOrder: 1,
         isActive: true,
         createdAt: DateTime.now(),
