@@ -742,7 +742,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: FoodItemCard(
                 name: item.name,
-                description: item.description,
                 portions: item.portions,
                 imageUrl: item.imageUrl,
                 isFavorite: item.isFavorite,

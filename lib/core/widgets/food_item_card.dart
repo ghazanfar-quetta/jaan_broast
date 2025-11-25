@@ -6,7 +6,6 @@ import '../../features/home/domain/models/food_item.dart';
 
 class FoodItemCard extends StatelessWidget {
   final String name;
-  final String description;
   final List<FoodPortion> portions;
   final String imageUrl;
   final VoidCallback onTap;
@@ -19,7 +18,6 @@ class FoodItemCard extends StatelessWidget {
   const FoodItemCard({
     Key? key,
     required this.name,
-    required this.description,
     required this.portions,
     required this.imageUrl,
     required this.onTap,
@@ -32,7 +30,6 @@ class FoodItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMobile = ScreenUtils.isMobile(context);
     final FoodPortion selectedPortion = portions[selectedPortionIndex];
 
     return Card(
@@ -45,9 +42,7 @@ class FoodItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         child: Padding(
           padding: isCompact
-              ? const EdgeInsets.all(
-                  12.0,
-                ) // Increased padding for larger images
+              ? const EdgeInsets.all(12.0)
               : ScreenUtils.responsivePadding(
                   context,
                   mobile: 16,
@@ -55,25 +50,25 @@ class FoodItemCard extends StatelessWidget {
                   desktop: 24,
                 ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Food Image - INCREASED SIZE
+              // Food Image - MAXIMUM SIZE
               Container(
                 width: isCompact
-                    ? 80 // Increased from 60
+                    ? 140 // Much larger - was 100
                     : ScreenUtils.responsiveValue(
                         context,
-                        mobile: 100, // Increased from 70
-                        tablet: 120, // Increased from 90
-                        desktop: 140, // Increased from 100
+                        mobile: 160, // Much larger - was 120
+                        tablet: 180, // Much larger - was 140
+                        desktop: 200, // Much larger - was 160
                       ),
                 height: isCompact
-                    ? 80 // Increased from 60
+                    ? 140 // Much larger - was 100
                     : ScreenUtils.responsiveValue(
                         context,
-                        mobile: 100, // Increased from 70
-                        tablet: 120, // Increased from 90
-                        desktop: 140, // Increased from 100
+                        mobile: 160, // Much larger - was 120
+                        tablet: 180, // Much larger - was 140
+                        desktop: 200, // Much larger - was 160
                       ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(
@@ -86,17 +81,24 @@ class FoodItemCard extends StatelessWidget {
                           fit: BoxFit.cover,
                         )
                       : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: imageUrl.isEmpty
                     ? Icon(
                         Icons.fastfood,
                         size: isCompact
-                            ? 32 // Increased from 24
+                            ? 50 // Larger icon for placeholder
                             : ScreenUtils.responsiveValue(
                                 context,
-                                mobile: 40, // Increased from 30
-                                tablet: 45, // Increased from 35
-                                desktop: 50, // Increased from 40
+                                mobile: 60,
+                                tablet: 65,
+                                desktop: 70,
                               ),
                         color: Theme.of(context).primaryColor,
                       )
@@ -105,190 +107,137 @@ class FoodItemCard extends StatelessWidget {
 
               SizedBox(
                 width: isCompact
-                    ? 12 // Increased from 8
+                    ? 12
                     : ScreenUtils.responsiveValue(
                         context,
-                        mobile: 16, // Increased from 12
-                        tablet: 20, // Increased from 16
-                        desktop: 24, // Increased from 20
+                        mobile: 16,
+                        tablet: 20,
+                        desktop: 24,
                       ),
               ),
 
-              // Food Details
+              // Food Details - Smaller content area
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Name and description
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          name,
-                          style: TextStyle(
-                            fontSize: isCompact
-                                ? AppConstants
-                                      .bodyTextSize // Increased from caption
-                                : ScreenUtils.responsiveFontSize(
-                                    context,
-                                    mobile: AppConstants.headingSizeSmall,
-                                    tablet: AppConstants.headingSizeSmall + 2,
-                                    desktop: AppConstants.headingSizeSmall + 4,
-                                  ),
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(
-                          height: isCompact
-                              ? 4 // Increased from 2
-                              : ScreenUtils.responsiveValue(
-                                  context,
-                                  mobile: 4,
-                                  tablet: 6,
-                                  desktop: 8,
-                                ),
-                        ),
-                        Text(
-                          description,
-                          style: TextStyle(
-                            fontSize: isCompact
-                                ? AppConstants.captionTextSize
-                                : ScreenUtils.responsiveFontSize(
-                                    context,
-                                    mobile: AppConstants.bodyTextSize - 2,
-                                    tablet: AppConstants.bodyTextSize,
-                                    desktop: AppConstants.bodyTextSize + 2,
-                                  ),
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(0.7),
-                          ),
-                          maxLines: isCompact
-                              ? 2 // Increased from 1
-                              : (isMobile ? 3 : 4), // Increased lines
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-
-                    if (!isCompact)
-                      SizedBox(
-                        height: ScreenUtils.responsiveValue(
-                          context,
-                          mobile: 8,
-                          tablet: 12,
-                          desktop: 16,
-                        ),
-                      ),
-
-                    if (!isCompact)
-                      _buildPortionSelection(context, selectedPortion),
-
-                    if (!isCompact)
-                      SizedBox(
-                        height: ScreenUtils.responsiveValue(
-                          context,
-                          mobile: 8,
-                          tablet: 12,
-                          desktop: 16,
-                        ),
-                      ),
-
-                    // Bottom row with price and action buttons
-                    Container(
-                      width: double.infinity,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                child: Container(
+                  height: isCompact ? 120 : 140, // Fixed height to match image
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween, // Space out content
+                    children: [
+                      // Food Name - Smaller and compact
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Price
-                          Flexible(
-                            child: Text(
-                              selectedPortion.formattedPrice,
-                              style: TextStyle(
-                                fontSize: isCompact
-                                    ? AppConstants
-                                          .bodyTextSize // Increased from caption
-                                    : ScreenUtils.responsiveFontSize(
-                                        context,
-                                        mobile: AppConstants.bodyTextSize,
-                                        tablet: AppConstants.bodyTextSize + 2,
-                                        desktop: AppConstants.bodyTextSize + 4,
-                                      ),
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).primaryColor,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: isCompact
+                                  ? AppConstants.captionTextSize +
+                                        2 // Smaller - was headingSizeSmall
+                                  : ScreenUtils.responsiveFontSize(
+                                      context,
+                                      mobile:
+                                          AppConstants.bodyTextSize, // Smaller
+                                      tablet: AppConstants.bodyTextSize + 2,
+                                      desktop: AppConstants.bodyTextSize + 4,
+                                    ),
+                              fontWeight: FontWeight.w600, // Slightly lighter
+                              color: Theme.of(context).colorScheme.onBackground,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
 
-                          // Action buttons
-                          Container(
-                            width: isCompact ? 60 : 80, // Increased width
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                // Favorite Icon Button
-                                if (onToggleFavorite != null)
-                                  Container(
-                                    width: isCompact
-                                        ? 24
-                                        : 30, // Increased size
-                                    height: isCompact ? 24 : 30,
-                                    child: IconButton(
-                                      onPressed: onToggleFavorite,
-                                      icon: Icon(
-                                        isFavorite
-                                            ? Icons.favorite
-                                            : Icons.favorite_border,
-                                        size: isCompact
-                                            ? 18
-                                            : 24, // Increased size
-                                      ),
-                                      padding: EdgeInsets.zero,
-                                      color: isFavorite
-                                          ? Colors.red
-                                          : Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.6),
-                                    ),
-                                  ),
+                          SizedBox(height: 4),
 
-                                SizedBox(
-                                  width: isCompact ? 6 : 8,
-                                ), // Increased spacing
-                                // Add to Cart Icon Button
-                                if (onAddToCart != null)
-                                  Container(
-                                    width: isCompact
-                                        ? 24
-                                        : 30, // Increased size
-                                    height: isCompact ? 24 : 30,
-                                    child: IconButton(
-                                      onPressed: onAddToCart,
-                                      icon: Icon(
-                                        Icons.add_circle,
-                                        size: isCompact
-                                            ? 18
-                                            : 24, // Increased size
-                                      ),
-                                      padding: EdgeInsets.zero,
-                                      color: Theme.of(context).primaryColor,
+                          // Price below name - Smaller
+                          Text(
+                            selectedPortion.formattedPrice,
+                            style: TextStyle(
+                              fontSize: isCompact
+                                  ? AppConstants
+                                        .captionTextSize // Smaller
+                                  : ScreenUtils.responsiveFontSize(
+                                      context,
+                                      mobile: AppConstants.bodyTextSize - 2,
+                                      tablet: AppConstants.bodyTextSize,
+                                      desktop: AppConstants.bodyTextSize + 2,
                                     ),
-                                  ),
-                              ],
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).primaryColor,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+
+                      // Portion selection - only show in regular mode (smaller)
+                      if (!isCompact && portions.length > 1)
+                        _buildPortionSelection(context, selectedPortion),
+
+                      // Action buttons - Smaller and compact
+                      Container(
+                        width: double.infinity,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Spacer to push buttons to right
+                            Spacer(),
+
+                            // Action buttons - SMALLER
+                            Container(
+                              width: isCompact ? 60 : 80, // Smaller container
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  // Favorite Icon Button - SMALLER
+                                  if (onToggleFavorite != null)
+                                    Container(
+                                      width: isCompact ? 24 : 28, // Smaller
+                                      height: isCompact ? 24 : 28,
+                                      child: IconButton(
+                                        onPressed: onToggleFavorite,
+                                        icon: Icon(
+                                          isFavorite
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          size: isCompact ? 18 : 22, // Smaller
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        color: isFavorite
+                                            ? Colors.red
+                                            : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withOpacity(0.6),
+                                      ),
+                                    ),
+
+                                  SizedBox(width: isCompact ? 6 : 8),
+
+                                  // Add to Cart Icon Button - SMALLER
+                                  if (onAddToCart != null)
+                                    Container(
+                                      width: isCompact ? 24 : 28, // Smaller
+                                      height: isCompact ? 24 : 28,
+                                      child: IconButton(
+                                        onPressed: onAddToCart,
+                                        icon: Icon(
+                                          Icons.add_circle,
+                                          size: isCompact ? 18 : 22, // Smaller
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        color: Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -302,22 +251,6 @@ class FoodItemCard extends StatelessWidget {
     BuildContext context,
     FoodPortion selectedPortion,
   ) {
-    if (portions.length <= 1) {
-      return Text(
-        selectedPortion.size,
-        style: TextStyle(
-          fontSize: ScreenUtils.responsiveFontSize(
-            context,
-            mobile: AppConstants.captionTextSize - 2,
-            tablet: AppConstants.captionTextSize,
-            desktop: AppConstants.captionTextSize,
-          ),
-          fontWeight: FontWeight.w500,
-          color: Theme.of(context).primaryColor,
-        ),
-      );
-    }
-
     return Wrap(
       spacing: ScreenUtils.responsiveValue(
         context,
@@ -371,9 +304,9 @@ class FoodItemCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: ScreenUtils.responsiveFontSize(
                   context,
-                  mobile: AppConstants.captionTextSize - 3,
-                  tablet: AppConstants.captionTextSize - 2,
-                  desktop: AppConstants.captionTextSize - 2,
+                  mobile: AppConstants.captionTextSize - 2, // Smaller
+                  tablet: AppConstants.captionTextSize - 1,
+                  desktop: AppConstants.captionTextSize,
                 ),
                 color: isSelected
                     ? Colors.white
