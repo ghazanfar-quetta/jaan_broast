@@ -31,7 +31,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   Future<void> _initializeData() async {
-    await _viewModel.loadUserFavorites();
+    await _viewModel.loadUserFavorites(context);
     setState(() {
       _isInitialized = true;
     });
@@ -146,7 +146,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         // Favorites Grid
         Expanded(
           child: RefreshIndicator(
-            onRefresh: () => _viewModel.refreshFavorites(),
+            onRefresh: () => _viewModel.refreshFavorites(context),
             color: Theme.of(context).primaryColor,
             child: Padding(
               padding: EdgeInsets.only(
@@ -432,7 +432,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: () => _viewModel.refreshFavorites(),
+              onPressed: () => _viewModel.refreshFavorites(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,

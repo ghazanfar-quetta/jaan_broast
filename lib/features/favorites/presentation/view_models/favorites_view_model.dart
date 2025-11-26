@@ -2,7 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import '../../../home/domain/models/food_item.dart';
+import 'package:jaan_broast/core/services/favorites_manager_service.dart';
+import 'package:provider/provider.dart';
+import 'package:jaan_broast/features/home/presentation/view_models/home_view_model.dart';
 
 class FavoritesViewModel with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -19,10 +23,14 @@ class FavoritesViewModel with ChangeNotifier {
   String get error => _error;
   bool get hasData => _hasData;
   bool get hasFavorites => _favoriteItems.isNotEmpty;
-  int get favoritesCount => _favoriteItems.length; // Add this back
+  int get favoritesCount => _favoriteItems.length;
 
-  // Load user favorites
-  Future<void> loadUserFavorites() async {
+  // Load user favorites using the shared service
+  Future<void> loadUserFavorites(BuildContext context) async {
+    final favoritesManager = Provider.of<FavoritesManagerService>(
+      context,
+      listen: false,
+    );
     final currentUser = _auth.currentUser;
 
     if (currentUser == null) {
@@ -37,15 +45,8 @@ class FavoritesViewModel with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Get favorite item IDs
-      final favoritesSnapshot = await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .collection('favorites')
-          .orderBy('addedAt', descending: true)
-          .get();
-
-      final favoriteIds = favoritesSnapshot.docs.map((doc) => doc.id).toList();
+      // Get favorite item IDs from shared service
+      final favoriteIds = favoritesManager.favoriteItemIds;
 
       if (favoriteIds.isEmpty) {
         _favoriteItems = [];
@@ -55,22 +56,20 @@ class FavoritesViewModel with ChangeNotifier {
         return;
       }
 
-      // Get the actual food items
+      // Get the actual food items for these IDs
       final foodItemsSnapshot = await _firestore
           .collection('foodItems')
           .where(FieldPath.documentId, whereIn: favoriteIds)
           .where('isAvailable', isEqualTo: true)
           .get();
 
+      // Create a map for quick lookup
       final foodItemsMap = {
         for (var doc in foodItemsSnapshot.docs)
-          doc.id: FoodItem.fromMap({
-            'id': doc.id,
-            ...doc.data(),
-            'isFavorite': true, // Force true since we're in favorites
-          }),
+          doc.id: FoodItem.fromMap({'id': doc.id, ...doc.data()}),
       };
 
+      // Rebuild the list in the order of favoriteIds
       _favoriteItems = favoriteIds
           .map((id) => foodItemsMap[id])
           .where((item) => item != null)
@@ -83,14 +82,13 @@ class FavoritesViewModel with ChangeNotifier {
       _error = 'Failed to load favorites: $e';
       print('Error loading favorites: $e');
       _favoriteItems = [];
-      _hasData = false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Remove item from favorites
+  // Remove item from favorites using shared service
   Future<void> removeFromFavorites(String itemId, BuildContext context) async {
     final currentUser = _auth.currentUser;
 
@@ -111,6 +109,10 @@ class FavoritesViewModel with ChangeNotifier {
       // Remove from local list
       _favoriteItems.removeWhere((item) => item.id == itemId);
 
+      // NOTIFY HOME VIEW MODEL TO REFRESH
+      final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
+      await homeViewModel.refreshData(context); // This will reload home data
+
       notifyListeners();
       _showSnackbar(context, 'Removed from favorites', isError: false);
     } catch (e) {
@@ -119,7 +121,7 @@ class FavoritesViewModel with ChangeNotifier {
     }
   }
 
-  // Clear all favorites
+  // Clear all favorites using shared service
   Future<void> clearAllFavorites(BuildContext context) async {
     final currentUser = _auth.currentUser;
 
@@ -146,6 +148,10 @@ class FavoritesViewModel with ChangeNotifier {
       // Clear local list
       _favoriteItems.clear();
 
+      // NOTIFY HOME VIEW MODEL TO REFRESH
+      final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
+      await homeViewModel.refreshData(context); // This will reload home data
+
       notifyListeners();
       _showSnackbar(context, 'All favorites cleared', isError: false);
     } catch (e) {
@@ -158,8 +164,8 @@ class FavoritesViewModel with ChangeNotifier {
   bool get isUserLoggedIn => _auth.currentUser != null;
 
   // Refresh favorites
-  Future<void> refreshFavorites() async {
-    await loadUserFavorites();
+  Future<void> refreshFavorites(BuildContext context) async {
+    await loadUserFavorites(context);
   }
 
   // Search within favorites
