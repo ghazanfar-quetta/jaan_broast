@@ -95,3 +95,7 @@ functions/package-lock.json
 Thumbs.db
 *.bak
 *.tmp
+
+service-account-key.json
+firebase_data/service-account-key.json
+firebase_data/*.json
