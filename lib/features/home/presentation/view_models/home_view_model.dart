@@ -22,6 +22,39 @@ class HomeViewModel with ChangeNotifier {
   String get selectedCategoryId => _selectedCategoryId; // Make sure this exists
   bool get isLoading => _isLoading;
   String get error => _error;
+  bool get isCategorySelected => _selectedCategoryId.isNotEmpty;
+
+  // Get category name by ID
+  String getCategoryName(String categoryId) {
+    final category = _categories.firstWhere(
+      (cat) => cat.id == categoryId,
+      orElse: () => FoodCategory(
+        id: '',
+        name: 'All Categories',
+        description: '',
+        imageUrl: '',
+        displayOrder: 0,
+        isActive: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
+    return category.name;
+  }
+
+  // Get items count for a category
+  int getItemsCountForCategory(String categoryId) {
+    return _allMenuItems
+        .where((item) => item.category == categoryId && item.isAvailable)
+        .length;
+  }
+
+  // Clear category selection
+  void clearCategorySelection() {
+    _selectedCategoryId = '';
+    _applyFilters();
+    notifyListeners();
+  }
 
   // Toggle favorite status
   void toggleFavorite(String itemId) {
@@ -352,5 +385,32 @@ class HomeViewModel with ChangeNotifier {
   // Refresh data
   Future<void> refreshData() async {
     await loadInitialData();
+  }
+
+  // Track active category index for scroll synchronization
+  int _activeCategoryIndex = 0;
+
+  int get activeCategoryIndex => _activeCategoryIndex;
+
+  void setActiveCategoryIndex(int index) {
+    _activeCategoryIndex = index;
+    notifyListeners();
+  }
+
+  // Get category by index
+  FoodCategory? getCategoryByIndex(int index) {
+    if (index >= 0 && index < _categories.length) {
+      return _categories[index];
+    }
+    return null;
+  }
+
+  // Clear all filters
+  void clearAllFilters() {
+    _selectedCategoryId = '';
+    _searchQuery = '';
+    _activeCategoryIndex = 0;
+    _applyFilters();
+    notifyListeners();
   }
 }

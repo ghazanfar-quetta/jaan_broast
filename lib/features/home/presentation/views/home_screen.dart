@@ -31,6 +31,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isInitialized = false;
   String _userAddress = 'Loading...'; // Default address
 
+  // Scroll controller for categories
+  final ScrollController _categoriesScrollController = ScrollController();
+
   // Bottom navigation items
   final List<BottomNavigationBarItem> _bottomNavItems = [
     const BottomNavigationBarItem(
@@ -469,61 +472,181 @@ class _HomeScreenState extends State<HomeScreen> {
     return RefreshIndicator(
       onRefresh: _viewModel.refreshData,
       color: Theme.of(context).primaryColor,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: ScreenUtils.responsivePadding(
-          context,
-          mobile: 16,
-          tablet: 20,
-          desktop: 24,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Location Header
-            _buildLocationHeader(),
-            SizedBox(
-              height: ScreenUtils.responsiveValue(
-                context,
-                mobile: 20,
-                tablet: 24,
-                desktop: 28,
-              ),
+      child: Column(
+        children: [
+          // Location and Search Section - Fixed at top
+          Container(
+            color: Theme.of(context).colorScheme.background,
+            padding: ScreenUtils.responsivePadding(
+              context,
+              mobile: 16,
+              tablet: 20,
+              desktop: 24,
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Location Header
+                _buildLocationHeader(),
+                SizedBox(
+                  height: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 20,
+                    tablet: 24,
+                    desktop: 28,
+                  ),
+                ),
 
-            // Search Field
-            SearchField(
-              controller: _searchController,
-              onChanged: (value) {
-                _viewModel.searchFoodItems(value);
-              },
-              onTap: _openSearchScreen,
-            ),
-            SizedBox(
-              height: ScreenUtils.responsiveValue(
-                context,
-                mobile: 24,
-                tablet: 28,
-                desktop: 32,
-              ),
-            ),
+                // Search Field
+                SearchField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    _viewModel.searchFoodItems(value);
+                  },
+                  onTap: _openSearchScreen,
+                ),
+                SizedBox(
+                  height: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 24,
+                    tablet: 28,
+                    desktop: 32,
+                  ),
+                ),
 
-            // Categories Section with Images
-            _buildCategoriesSection(viewModel),
-            SizedBox(
-              height: ScreenUtils.responsiveValue(
-                context,
-                mobile: 24,
-                tablet: 28,
-                desktop: 32,
-              ),
+                // Categories Section
+                _buildCategoriesSection(viewModel),
+              ],
             ),
+          ),
 
-            // All Menu Items Section
-            _buildMenuItemsSection(viewModel),
-          ],
-        ),
+          // Menu Items Section - Scrollable
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: ScreenUtils.responsivePadding(
+                context,
+                mobile: 16,
+                tablet: 20,
+                desktop: 24,
+              ),
+              child: _buildMenuItemsSection(viewModel),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildCategoriesSection(HomeViewModel viewModel) {
+    if (viewModel.categories.isEmpty) return const SizedBox();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with title and clear button when category is selected
+        if (viewModel.isCategorySelected)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${viewModel.getCategoryName(viewModel.selectedCategoryId)} (${viewModel.getItemsCountForCategory(viewModel.selectedCategoryId)})',
+                    style: TextStyle(
+                      fontSize: ScreenUtils.responsiveFontSize(
+                        context,
+                        mobile: AppConstants.headingSizeMedium,
+                        tablet: AppConstants.headingSizeMedium,
+                        desktop: AppConstants.headingSizeLarge,
+                      ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onBackground,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    _clearSearch();
+                    _viewModel.clearCategorySelection();
+                  },
+                  child: Text(
+                    'Clear',
+                    style: TextStyle(
+                      fontSize: ScreenUtils.responsiveFontSize(
+                        context,
+                        mobile: AppConstants.captionTextSize,
+                        tablet: AppConstants.bodyTextSize,
+                        desktop: AppConstants.bodyTextSize,
+                      ),
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Categories Title (only when no category is selected)
+        if (!viewModel.isCategorySelected)
+          Text(
+            'Categories',
+            style: TextStyle(
+              fontSize: ScreenUtils.responsiveFontSize(
+                context,
+                mobile: AppConstants.headingSizeMedium,
+                tablet: AppConstants.headingSizeMedium,
+                desktop: AppConstants.headingSizeLarge,
+              ),
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onBackground,
+            ),
+          ),
+
+        if (!viewModel.isCategorySelected)
+          SizedBox(
+            height: ScreenUtils.responsiveValue(
+              context,
+              mobile: 16,
+              tablet: 20,
+              desktop: 24,
+            ),
+          ),
+
+        // Categories List
+        SizedBox(
+          height: ScreenUtils.responsiveValue(
+            context,
+            mobile: 100, // Same height as before
+            tablet: 110,
+            desktop: 120,
+          ),
+          child: ListView.builder(
+            controller: _categoriesScrollController,
+            scrollDirection: Axis.horizontal,
+            itemCount: viewModel.categories.length,
+            itemBuilder: (context, index) {
+              final category = viewModel.categories[index];
+              return FoodCategoryCard(
+                name: category.name,
+                imageUrl: category.imageUrl,
+                isSelected: viewModel.selectedCategoryId == category.id,
+                onTap: () {
+                  _clearSearch();
+                  if (viewModel.selectedCategoryId == category.id) {
+                    // If same category clicked, show all items
+                    _viewModel.clearCategorySelection();
+                  } else {
+                    // Select category and show only those items
+                    _viewModel.selectCategory(category.id);
+                  }
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -589,61 +712,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoriesSection(HomeViewModel viewModel) {
-    if (viewModel.categories.isEmpty) return const SizedBox();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Categories',
-          style: TextStyle(
-            fontSize: ScreenUtils.responsiveFontSize(
-              context,
-              mobile: AppConstants.headingSizeMedium,
-              tablet: AppConstants.headingSizeMedium,
-              desktop: AppConstants.headingSizeLarge,
-            ),
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onBackground,
-          ),
-        ),
-        SizedBox(
-          height: ScreenUtils.responsiveValue(
-            context,
-            mobile: 16,
-            tablet: 20,
-            desktop: 24,
-          ),
-        ),
-        SizedBox(
-          height: ScreenUtils.responsiveValue(
-            context,
-            mobile: 100, // Increased height for circular images
-            tablet: 110,
-            desktop: 120,
-          ),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: viewModel.categories.length,
-            itemBuilder: (context, index) {
-              final category = viewModel.categories[index];
-              return FoodCategoryCard(
-                name: category.name,
-                imageUrl: category.imageUrl,
-                isSelected: viewModel.selectedCategoryId == category.id,
-                onTap: () {
-                  _clearSearch();
-                  _viewModel.selectCategory(category.id);
-                },
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildMenuItemsSection(HomeViewModel viewModel) {
     final menuItems = viewModel.getFilteredMenuItems();
 
@@ -704,27 +772,29 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Menu Items',
-          style: TextStyle(
-            fontSize: ScreenUtils.responsiveFontSize(
-              context,
-              mobile: AppConstants.headingSizeMedium,
-              tablet: AppConstants.headingSizeMedium,
-              desktop: AppConstants.headingSizeLarge,
+        if (!viewModel.isCategorySelected)
+          Text(
+            'Menu Items',
+            style: TextStyle(
+              fontSize: ScreenUtils.responsiveFontSize(
+                context,
+                mobile: AppConstants.headingSizeMedium,
+                tablet: AppConstants.headingSizeMedium,
+                desktop: AppConstants.headingSizeLarge,
+              ),
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onBackground,
             ),
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onBackground,
           ),
-        ),
-        SizedBox(
-          height: ScreenUtils.responsiveValue(
-            context,
-            mobile: 12,
-            tablet: 16,
-            desktop: 20,
+        if (!viewModel.isCategorySelected)
+          SizedBox(
+            height: ScreenUtils.responsiveValue(
+              context,
+              mobile: 12,
+              tablet: 16,
+              desktop: 20,
+            ),
           ),
-        ),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -831,6 +901,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _categoriesScrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
