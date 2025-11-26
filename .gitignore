@@ -1,24 +1,97 @@
-﻿# Flutter
+﻿# ==========================
+# FLUTTER / DART
+# ==========================
 .dart_tool/
 .packages
 .pub-cache/
 .pub/
-build/
-ios/.generated/
-android/.gradle/
-android/app/build/
-*.iml
-*.lock
-.DS_Store
-*.log
+/build/
 .flutter-plugins
 .flutter-plugins-dependencies
+generated_plugin_registrant.dart
 
-# Android
-android/app/src/main/jniLibs/
-android/app/src/main/assets/
+# ==========================
+# ANDROID
+# ==========================
+**/android/local.properties
+**/android/app/debug.keystore
+**/android/key.properties
+**/android/app/*.jks
+**/android/app/*.keystore
 
-# iOS
-ios/Flutter/App.framework/
-ios/Flutter/Flutter.framework/
-ios/Pods/
+# Gradle
+.gradle/
+**/android/.gradle/
+**/android/build/
+**/android/app/build/
+**/android/captures/
+
+# ==========================
+# iOS / macOS
+# ==========================
+**/ios/Pods/
+**/ios/Podfile.lock
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/flutter_export_environment.sh
+
+# Xcode
+**/ios/Flutter/Flutter.podspec
+**/ios/build/
+**/ios/.generated/
+**/ios/.symlinks/
+**/ios/.dart_tool/
+**/ios/.flutter-plugins*
+*.xcworkspace
+*.xcuserstate
+*.moved-aside
+*.xcuserdatad/
+*.idea/
+
+# ==========================
+# FIREBASE (safe exclusions)
+# ==========================
+# Cached files
+.firebase/
+firebase-debug.log
+
+# NEVER IGNORE THESE (mobile apps need them)
+# google-services.json
+# GoogleService-Info.plist
+
+# If using Firebase CLI functions:
+functions/node_modules/
+functions/.firebase/
+functions/package-lock.json
+
+# ==========================
+# ENV / SECRETS
+# ==========================
+.env
+.env.*
+*.secret
+*.private
+*.key
+
+# ==========================
+# EDITORS / IDE
+# ==========================
+.idea/
+.vscode/
+*.iml
+
+# ==========================
+# LOGS
+# ==========================
+*.log
+
+# ==========================
+# MISC
+# ==========================
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp

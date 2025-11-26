@@ -1,4 +1,6 @@
 // lib/features/home/domain/models/food_item.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class FoodItem {
   final String id;
   final String name;
@@ -14,7 +16,7 @@ class FoodItem {
   final int? preparationTime;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final bool isFavorite; // Add this field
+  final bool isFavorite;
 
   FoodItem({
     required this.id,
@@ -31,52 +33,42 @@ class FoodItem {
     this.preparationTime,
     required this.createdAt,
     required this.updatedAt,
-    this.isFavorite = false, // Default to false
+    this.isFavorite = false,
   });
 
   factory FoodItem.fromMap(Map<String, dynamic> map) {
-    final List<dynamic> portionsData = map['portions'] ?? [];
-    final List<FoodPortion> portions = portionsData.isNotEmpty
-        ? portionsData.map((portion) => FoodPortion.fromMap(portion)).toList()
-        : [
-            FoodPortion(
-              size: 'Regular',
-              price: (map['price'] ?? 0.0).toDouble(),
-            ),
-          ];
-
-    final createdAt = map['createdAt'] != null
-        ? DateTime.parse(map['createdAt'])
-        : DateTime.now();
-    final updatedAt = map['updatedAt'] != null
-        ? DateTime.parse(map['updatedAt'])
-        : DateTime.now();
-
     return FoodItem(
-      id: map['id'] ?? map['documentId'] ?? '',
+      id: map['id'] ?? '',
       name: map['name'] ?? '',
       description: map['description'] ?? '',
-      portions: portions,
-      imageUrl: map['imageUrl'] ?? map['image'] ?? '',
+      portions: (map['portions'] as List<dynamic>? ?? [])
+          .map((p) => FoodPortion.fromMap(p as Map<String, dynamic>))
+          .toList(),
+      imageUrl: map['imageUrl'] ?? '',
       category: map['category'] ?? '',
       tags: List<String>.from(map['tags'] ?? []),
       isAvailable: map['isAvailable'] ?? true,
       isFeatured: map['isFeatured'] ?? false,
-      rating: (map['rating'] ?? 0.0).toDouble(),
-      ratingCount: map['ratingCount'] ?? 0,
-      preparationTime: map['preparationTime'] ?? map['cookTime'] ?? 0,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
-      isFavorite: map['isFavorite'] ?? false, // Add this
+      rating: map['rating'] != null ? (map['rating']).toDouble() : null,
+      ratingCount: map['ratingCount'],
+      preparationTime: map['preparationTime'],
+      createdAt: map['createdAt'] is Timestamp
+          ? (map['createdAt'] as Timestamp).toDate()
+          : DateTime.tryParse(map['createdAt'] ?? '') ?? DateTime.now(),
+      updatedAt: map['updatedAt'] is Timestamp
+          ? (map['updatedAt'] as Timestamp).toDate()
+          : DateTime.tryParse(map['updatedAt'] ?? '') ?? DateTime.now(),
+      isFavorite: map['isFavorite'] ?? false,
     );
   }
 
+  /// ADD THIS — REQUIRED FIX
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
       'description': description,
-      'portions': portions.map((portion) => portion.toMap()).toList(),
+      'portions': portions.map((p) => p.toMap()).toList(),
       'imageUrl': imageUrl,
       'category': category,
       'tags': tags,
@@ -85,13 +77,12 @@ class FoodItem {
       'rating': rating,
       'ratingCount': ratingCount,
       'preparationTime': preparationTime,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'isFavorite': isFavorite, // Add this
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
+      'isFavorite': isFavorite,
     };
   }
 
-  // Add copyWith method for updating favorite status
   FoodItem copyWith({bool? isFavorite}) {
     return FoodItem(
       id: id,
@@ -112,11 +103,9 @@ class FoodItem {
     );
   }
 
-  // Helper methods
   double get basePrice => portions.isNotEmpty ? portions.first.price : 0.0;
   String get formattedBasePrice => 'Rs${basePrice.toStringAsFixed(2)}';
 
-  // Get min and max prices for price range display
   double get minPrice {
     if (portions.isEmpty) return 0.0;
     return portions.map((p) => p.price).reduce((a, b) => a < b ? a : b);
@@ -137,7 +126,7 @@ class FoodPortion {
   final String size;
   final double price;
   final String? description;
-  final int? serves; // Number of people this portion serves
+  final int? serves;
 
   FoodPortion({
     required this.size,
@@ -166,10 +155,5 @@ class FoodPortion {
 
   String get formattedPrice => 'Rs${price.toStringAsFixed(2)}';
 
-  String get displayText {
-    if (serves != null) {
-      return '$size (Serves $serves)';
-    }
-    return size;
-  }
+  String get displayText => serves != null ? '$size (Serves $serves)' : size;
 }

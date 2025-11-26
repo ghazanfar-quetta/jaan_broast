@@ -2,8 +2,10 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/food_category.dart';
 import '../../domain/models/food_item.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomeViewModel with ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<FoodCategory> _categories = [];
   List<FoodItem> _menuItems = [];
   List<FoodItem> _allMenuItems = [];
@@ -74,10 +76,13 @@ class HomeViewModel with ChangeNotifier {
     notifyListeners();
 
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      _loadCategories();
-      _loadMenuItems();
+      // Load categories from Firebase
+      await _loadCategoriesFromFirebase();
 
+      // Load food items from Firebase
+      await _loadFoodItemsFromFirebase();
+
+      // Select first category by default
       if (_categories.isNotEmpty) {
         _selectedCategoryId = _categories.first.id;
       }
@@ -85,9 +90,45 @@ class HomeViewModel with ChangeNotifier {
       _error = '';
     } catch (e) {
       _error = 'Failed to load data: $e';
+      print('Error loading data: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _loadCategoriesFromFirebase() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('categories')
+          .where('isActive', isEqualTo: true)
+          .orderBy('displayOrder')
+          .get();
+
+      _categories = querySnapshot.docs.map((doc) {
+        return FoodCategory.fromMap({'id': doc.id, ...doc.data()});
+      }).toList();
+    } catch (e) {
+      print('Error loading categories: $e');
+      throw e;
+    }
+  }
+
+  Future<void> _loadFoodItemsFromFirebase() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('foodItems')
+          .where('isAvailable', isEqualTo: true)
+          .get();
+
+      _allMenuItems = querySnapshot.docs.map((doc) {
+        return FoodItem.fromMap({'id': doc.id, ...doc.data()});
+      }).toList();
+
+      _menuItems = _allMenuItems;
+    } catch (e) {
+      print('Error loading food items: $e');
+      throw e;
     }
   }
 

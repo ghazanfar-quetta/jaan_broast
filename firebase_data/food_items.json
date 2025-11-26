@@ -1,0 +1,707 @@
+{
+  "foodItems": [
+    {
+      "id": "1",
+      "name": "Chicken Biryani",
+      "description": "Fragrant basmati rice cooked with tender chicken pieces and aromatic spices",
+      "portions": [
+        {"size": "Single", "price": 380.00, "serves": 1},
+        {"size": "Double", "price": 650.00, "serves": 2},
+        {"size": "Family", "price": 1200.00, "serves": 4}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1563379091339-03246963d96f?w=400&h=300&fit=crop",
+      "category": "1",
+      "tags": ["spicy", "rice", "chicken", "biryani", "traditional"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.7,
+      "ratingCount": 156,
+      "preparationTime": 25,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "2",
+      "name": "Beef Pulao",
+      "description": "Traditional beef pulao with tender beef chunks and aromatic rice",
+      "portions": [
+        {"size": "Single", "price": 400.00, "serves": 1},
+        {"size": "Double", "price": 720.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=400&h=300&fit=crop",
+      "category": "1",
+      "tags": ["rice", "beef", "traditional", "pulao"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.4,
+      "ratingCount": 89,
+      "preparationTime": 30,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "3",
+      "name": "Chicken Broast",
+      "description": "Crispy fried chicken pieces marinated with special spices",
+      "portions": [
+        {"size": "4 Pieces", "price": 550.00, "serves": 2},
+        {"size": "8 Pieces", "price": 950.00, "serves": 4},
+        {"size": "12 Pieces", "price": 1350.00, "serves": 6}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&h=300&fit=crop",
+      "category": "3",
+      "tags": ["crispy", "chicken", "spicy", "fried"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.6,
+      "ratingCount": 203,
+      "preparationTime": 20,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "4",
+      "name": "Classic Beef Burger",
+      "description": "Juicy beef patty with fresh vegetables and special sauce",
+      "portions": [
+        {"size": "Single", "price": 320.00, "serves": 1},
+        {"size": "Combo", "price": 450.00, "serves": 1}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop",
+      "category": "2",
+      "tags": ["beef", "burger", "juicy", "fresh"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.5,
+      "ratingCount": 178,
+      "preparationTime": 15,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "5",
+      "name": "Chicken Tikka",
+      "description": "Grilled chicken pieces marinated in yogurt and spices",
+      "portions": [
+        {"size": "Half", "price": 480.00, "serves": 2},
+        {"size": "Full", "price": 850.00, "serves": 4}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=400&h=300&fit=crop",
+      "category": "4",
+      "tags": ["grilled", "chicken", "tikka", "bbq"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.3,
+      "ratingCount": 134,
+      "preparationTime": 25,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "6",
+      "name": "Chicken Fried Rice",
+      "description": "Stir-fried rice with chicken, vegetables and soy sauce",
+      "portions": [
+        {"size": "Regular", "price": 350.00, "serves": 1},
+        {"size": "Large", "price": 580.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop",
+      "category": "5",
+      "tags": ["rice", "chicken", "chinese", "stir-fry"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.2,
+      "ratingCount": 97,
+      "preparationTime": 18,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "7",
+      "name": "Pepperoni Pizza",
+      "description": "Classic pizza with pepperoni and mozzarella cheese",
+      "portions": [
+        {"size": "Small", "price": 650.00, "serves": 2},
+        {"size": "Medium", "price": 950.00, "serves": 3},
+        {"size": "Large", "price": 1250.00, "serves": 4}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop",
+      "category": "6",
+      "tags": ["pizza", "pepperoni", "cheese", "italian"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.8,
+      "ratingCount": 245,
+      "preparationTime": 20,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "8",
+      "name": "Club Sandwich",
+      "description": "Triple decker sandwich with chicken, bacon and vegetables",
+      "portions": [
+        {"size": "Regular", "price": 380.00, "serves": 1},
+        {"size": "With Fries", "price": 480.00, "serves": 1}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=400&h=300&fit=crop",
+      "category": "7",
+      "tags": ["sandwich", "chicken", "bacon", "fresh"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.4,
+      "ratingCount": 112,
+      "preparationTime": 12,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "9",
+      "name": "Grilled Fish",
+      "description": "Fresh fish fillet grilled to perfection with herbs",
+      "portions": [
+        {"size": "Single", "price": 680.00, "serves": 1},
+        {"size": "Double", "price": 1200.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop",
+      "category": "8",
+      "tags": ["fish", "grilled", "seafood", "healthy"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.6,
+      "ratingCount": 78,
+      "preparationTime": 22,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "10",
+      "name": "Chocolate Cake",
+      "description": "Rich and moist chocolate cake with chocolate frosting",
+      "portions": [
+        {"size": "Slice", "price": 220.00, "serves": 1},
+        {"size": "Whole", "price": 1500.00, "serves": 8}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop",
+      "category": "9",
+      "tags": ["cake", "chocolate", "dessert", "sweet"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.9,
+      "ratingCount": 189,
+      "preparationTime": 5,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "11",
+      "name": "Fresh Lime Soda",
+      "description": "Refreshing lime soda with mint and ice",
+      "portions": [
+        {"size": "Regular", "price": 120.00, "serves": 1},
+        {"size": "Large", "price": 180.00, "serves": 1}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop",
+      "category": "10",
+      "tags": ["drink", "soda", "lime", "refreshing"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.3,
+      "ratingCount": 156,
+      "preparationTime": 3,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "12",
+      "name": "Caesar Salad",
+      "description": "Fresh romaine lettuce with caesar dressing and croutons",
+      "portions": [
+        {"size": "Regular", "price": 320.00, "serves": 1},
+        {"size": "Large", "price": 480.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400&h=300&fit=crop",
+      "category": "11",
+      "tags": ["salad", "healthy", "fresh", "vegetables"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.2,
+      "ratingCount": 89,
+      "preparationTime": 8,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "13",
+      "name": "Mutton Biryani",
+      "description": "Fragrant rice with tender mutton pieces and aromatic spices",
+      "portions": [
+        {"size": "Single", "price": 450.00, "serves": 1},
+        {"size": "Double", "price": 780.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1599043513900-ed6fe01d3833?w=400&h=300&fit=crop",
+      "category": "1",
+      "tags": ["mutton", "biryani", "spicy", "rice"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.7,
+      "ratingCount": 134,
+      "preparationTime": 35,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "14",
+      "name": "Chicken Cheese Burger",
+      "description": "Crispy chicken patty with melted cheese and fresh veggies",
+      "portions": [
+        {"size": "Single", "price": 350.00, "serves": 1},
+        {"size": "Combo", "price": 500.00, "serves": 1}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1606755962773-d324e3833248?w=400&h=300&fit=crop",
+      "category": "2",
+      "tags": ["chicken", "burger", "cheese", "crispy"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.4,
+      "ratingCount": 167,
+      "preparationTime": 15,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "15",
+      "name": "Beef Seekh Kabab",
+      "description": "Minced beef kababs grilled on skewers with spices",
+      "portions": [
+        {"size": "2 Pieces", "price": 280.00, "serves": 1},
+        {"size": "4 Pieces", "price": 480.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&h=300&fit=crop",
+      "category": "4",
+      "tags": ["beef", "kabab", "grilled", "spicy"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.5,
+      "ratingCount": 98,
+      "preparationTime": 20,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "16",
+      "name": "Vegetable Spring Rolls",
+      "description": "Crispy spring rolls filled with fresh vegetables",
+      "portions": [
+        {"size": "4 Pieces", "price": 220.00, "serves": 2},
+        {"size": "8 Pieces", "price": 380.00, "serves": 4}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1589606663750-1e3364e4b83e?w=400&h=300&fit=crop",
+      "category": "12",
+      "tags": ["vegetable", "spring rolls", "crispy", "appetizer"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.3,
+      "ratingCount": 112,
+      "preparationTime": 12,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "17",
+      "name": "Chicken Manchurian",
+      "description": "Crispy chicken in tangy manchurian sauce",
+      "portions": [
+        {"size": "Regular", "price": 420.00, "serves": 2},
+        {"size": "Large", "price": 680.00, "serves": 4}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&h=300&fit=crop",
+      "category": "5",
+      "tags": ["chicken", "manchurian", "chinese", "spicy"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.6,
+      "ratingCount": 145,
+      "preparationTime": 18,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "18",
+      "name": "Margherita Pizza",
+      "description": "Classic pizza with tomato sauce and fresh mozzarella",
+      "portions": [
+        {"size": "Medium", "price": 850.00, "serves": 2},
+        {"size": "Large", "price": 1150.00, "serves": 3}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=400&h=300&fit=crop",
+      "category": "6",
+      "tags": ["pizza", "margherita", "cheese", "tomato"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.4,
+      "ratingCount": 178,
+      "preparationTime": 18,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "19",
+      "name": "Grilled Chicken Wrap",
+      "description": "Grilled chicken strips wrapped in soft tortilla with veggies",
+      "portions": [
+        {"size": "Single", "price": 320.00, "serves": 1},
+        {"size": "Combo", "price": 450.00, "serves": 1}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1565299585323-38174c13fae8?w=400&h=300&fit=crop",
+      "category": "7",
+      "tags": ["wrap", "chicken", "grilled", "healthy"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.3,
+      "ratingCount": 94,
+      "preparationTime": 10,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "20",
+      "name": "Fried Prawns",
+      "description": "Crispy fried prawns with special seasoning",
+      "portions": [
+        {"size": "6 Pieces", "price": 580.00, "serves": 2},
+        {"size": "12 Pieces", "price": 980.00, "serves": 4}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?w=400&h=300&fit=crop",
+      "category": "8",
+      "tags": ["prawns", "fried", "seafood", "crispy"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.5,
+      "ratingCount": 67,
+      "preparationTime": 16,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "21",
+      "name": "Tiramisu",
+      "description": "Classic Italian dessert with coffee-soaked ladyfingers",
+      "portions": [
+        {"size": "Slice", "price": 280.00, "serves": 1},
+        {"size": "Whole", "price": 1800.00, "serves": 8}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=400&h=300&fit=crop",
+      "category": "9",
+      "tags": ["tiramisu", "dessert", "coffee", "italian"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.8,
+      "ratingCount": 123,
+      "preparationTime": 5,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "22",
+      "name": "Mango Shake",
+      "description": "Creamy mango shake made with fresh mangoes",
+      "portions": [
+        {"size": "Regular", "price": 180.00, "serves": 1},
+        {"size": "Large", "price": 250.00, "serves": 1}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=400&h=300&fit=crop",
+      "category": "10",
+      "tags": ["mango", "shake", "sweet", "refreshing"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.7,
+      "ratingCount": 201,
+      "preparationTime": 5,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "23",
+      "name": "Greek Salad",
+      "description": "Fresh vegetables with feta cheese and olives",
+      "portions": [
+        {"size": "Regular", "price": 350.00, "serves": 1},
+        {"size": "Large", "price": 520.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=300&fit=crop",
+      "category": "11",
+      "tags": ["salad", "greek", "feta", "healthy"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.3,
+      "ratingCount": 78,
+      "preparationTime": 10,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "24",
+      "name": "Chicken Wings",
+      "description": "Crispy chicken wings with your choice of sauce",
+      "portions": [
+        {"size": "6 Pieces", "price": 380.00, "serves": 2},
+        {"size": "12 Pieces", "price": 650.00, "serves": 4}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=400&h=300&fit=crop",
+      "category": "12",
+      "tags": ["chicken", "wings", "crispy", "appetizer"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.6,
+      "ratingCount": 167,
+      "preparationTime": 15,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "25",
+      "name": "Vegetable Biryani",
+      "description": "Fragrant rice cooked with fresh vegetables and spices",
+      "portions": [
+        {"size": "Single", "price": 320.00, "serves": 1},
+        {"size": "Double", "price": 550.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&h=300&fit=crop",
+      "category": "1",
+      "tags": ["vegetable", "biryani", "rice", "vegetarian"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.2,
+      "ratingCount": 89,
+      "preparationTime": 20,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "26",
+      "name": "Fish Burger",
+      "description": "Crispy fish fillet with tartar sauce and fresh lettuce",
+      "portions": [
+        {"size": "Single", "price": 380.00, "serves": 1},
+        {"size": "Combo", "price": 520.00, "serves": 1}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400&h=300&fit=crop",
+      "category": "2",
+      "tags": ["fish", "burger", "crispy", "seafood"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.4,
+      "ratingCount": 112,
+      "preparationTime": 14,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "27",
+      "name": "Chicken Malai Boti",
+      "description": "Creamy grilled chicken pieces marinated in malai and spices",
+      "portions": [
+        {"size": "Half", "price": 520.00, "serves": 2},
+        {"size": "Full", "price": 920.00, "serves": 4}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop",
+      "category": "4",
+      "tags": ["chicken", "malai", "grilled", "creamy"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.7,
+      "ratingCount": 145,
+      "preparationTime": 25,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "28",
+      "name": "Chow Mein",
+      "description": "Stir-fried noodles with vegetables and your choice of protein",
+      "portions": [
+        {"size": "Regular", "price": 380.00, "serves": 1},
+        {"size": "Large", "price": 620.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400&h=300&fit=crop",
+      "category": "5",
+      "tags": ["noodles", "chow mein", "chinese", "stir-fry"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.3,
+      "ratingCount": 134,
+      "preparationTime": 15,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "29",
+      "name": "BBQ Chicken Pizza",
+      "description": "Pizza with BBQ sauce, chicken, and red onions",
+      "portions": [
+        {"size": "Medium", "price": 980.00, "serves": 2},
+        {"size": "Large", "price": 1350.00, "serves": 3}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1595708684082-a173bb3a06c5?w=400&h=300&fit=crop",
+      "category": "6",
+      "tags": ["pizza", "bbq", "chicken", "onion"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.6,
+      "ratingCount": 189,
+      "preparationTime": 20,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "30",
+      "name": "Turkey Club Sandwich",
+      "description": "Triple decker with turkey, bacon, lettuce and tomato",
+      "portions": [
+        {"size": "Regular", "price": 420.00, "serves": 1},
+        {"size": "Combo", "price": 550.00, "serves": 1}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1539252554453-80ab65ce3586?w=400&h=300&fit=crop",
+      "category": "7",
+      "tags": ["sandwich", "turkey", "bacon", "club"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.4,
+      "ratingCount": 96,
+      "preparationTime": 12,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "31",
+      "name": "Grilled Lobster",
+      "description": "Fresh lobster grilled with butter and herbs",
+      "portions": [
+        {"size": "Half", "price": 1800.00, "serves": 1},
+        {"size": "Full", "price": 3200.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&h=300&fit=crop",
+      "category": "8",
+      "tags": ["lobster", "grilled", "seafood", "premium"],
+      "isAvailable": true,
+      "isFeatured": true,
+      "rating": 4.9,
+      "ratingCount": 45,
+      "preparationTime": 25,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "32",
+      "name": "Cheesecake",
+      "description": "Creamy cheesecake with berry compote",
+      "portions": [
+        {"size": "Slice", "price": 280.00, "serves": 1},
+        {"size": "Whole", "price": 1900.00, "serves": 8}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1567306301408-9b74779a11af?w=400&h=300&fit=crop",
+      "category": "9",
+      "tags": ["cheesecake", "dessert", "creamy", "berries"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.7,
+      "ratingCount": 167,
+      "preparationTime": 5,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "33",
+      "name": "Iced Coffee",
+      "description": "Chilled coffee with milk and ice",
+      "portions": [
+        {"size": "Regular", "price": 200.00, "serves": 1},
+        {"size": "Large", "price": 280.00, "serves": 1}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=300&fit=crop",
+      "category": "10",
+      "tags": ["coffee", "iced", "refreshing", "caffeine"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.5,
+      "ratingCount": 134,
+      "preparationTime": 5,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "34",
+      "name": "Quinoa Salad",
+      "description": "Healthy quinoa with vegetables and lemon dressing",
+      "portions": [
+        {"size": "Regular", "price": 380.00, "serves": 1},
+        {"size": "Large", "price": 550.00, "serves": 2}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop",
+      "category": "11",
+      "tags": ["quinoa", "salad", "healthy", "vegetarian"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.4,
+      "ratingCount": 78,
+      "preparationTime": 12,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    },
+    {
+      "id": "35",
+      "name": "Mozzarella Sticks",
+      "description": "Breaded mozzarella sticks with marinara sauce",
+      "portions": [
+        {"size": "6 Pieces", "price": 320.00, "serves": 2},
+        {"size": "12 Pieces", "price": 550.00, "serves": 4}
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1594489573857-44d005e7db0c?w=400&h=300&fit=crop",
+      "category": "12",
+      "tags": ["mozzarella", "cheese", "fried", "appetizer"],
+      "isAvailable": true,
+      "isFeatured": false,
+      "rating": 4.6,
+      "ratingCount": 145,
+      "preparationTime": 10,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "isFavorite": false
+    }
+  ]
+}
