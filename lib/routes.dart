@@ -7,7 +7,7 @@ import 'features/onboarding/presentation/views/onboarding_screen.dart';
 import 'features/auth/presentation/views/sign_up_screen.dart';
 import 'features/home/presentation/views/home_screen.dart';
 import 'features/auth/presentation/views/sign_up_form_screen.dart';
-
+import 'features/favorites/presentation/views/favorites_screen.dart';
 // Import permission service
 import 'core/services/permission_service.dart';
 
@@ -51,6 +51,9 @@ class AppRoutes {
 
       case home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
+
+      case favorites:
+        return MaterialPageRoute(builder: (_) => const FavoritesScreen());
 
       // New home feature routes
       case foodDetails:

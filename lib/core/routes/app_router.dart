@@ -10,7 +10,7 @@ class AppRouter {
     if (!hasSeenOnboarding) {
       return '/onboarding';
     } else if (isLoggedIn) {
-      return '/home'; // You'll create this later
+      return '/home';
     } else {
       return '/auth';
     }

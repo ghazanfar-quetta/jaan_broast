@@ -16,6 +16,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 // Import LocationSetupScreen
 import 'package:jaan_broast/features/location/presentation/views/location_setup_screen.dart';
+import 'package:jaan_broast/features/favorites/presentation/views/favorites_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -81,7 +82,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initializeData() async {
-    await _viewModel.loadInitialData();
+    await _viewModel.loadInitialData(context);
+    _loadUserAddress(); // Load address from Firestore
+    setState(() {
+      _isInitialized = true;
+    });
   }
 
   // New method to load user address from Firestore
@@ -192,12 +197,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCurrentScreen() {
-    // For now, we'll only implement the Home screen content
-    // Other screens will show placeholders
-    if (_currentIndex == 0) {
-      return _buildHomeContent();
-    } else {
-      return _buildPlaceholderScreen();
+    switch (_currentIndex) {
+      case 0:
+        return _buildHomeContent();
+      case 1:
+        return const FavoritesScreen();
+      default:
+        return _buildPlaceholderScreen();
     }
   }
 
@@ -429,8 +435,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 desktop: 28,
               ),
             ),
+            // In the _buildErrorState method, change the ElevatedButton:
             ElevatedButton(
-              onPressed: _viewModel.refreshData,
+              onPressed: () => _viewModel.refreshData,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
@@ -468,9 +475,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // In the _buildContent method:
   Widget _buildContent(HomeViewModel viewModel) {
     return RefreshIndicator(
-      onRefresh: _viewModel.refreshData,
+      onRefresh: () => _viewModel.refreshData(context),
       color: Theme.of(context).primaryColor,
       child: Column(
         children: [
@@ -837,7 +845,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _openFoodDetails(item);
               },
               onToggleFavorite: () {
-                _viewModel.toggleFavorite(item.id);
+                _viewModel.toggleFavorite(item.id, context);
               },
             );
           },

@@ -1,3 +1,4 @@
+// lib/core/services/firebase_food_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../features/home/domain/models/food_item.dart';
 import '../../features/home/domain/models/food_category.dart';
@@ -62,6 +63,103 @@ class FirestoreFoodService {
               )
               .toList(),
         );
+  }
+
+  // Add to FirestoreFoodService class in lib/core/services/firestore_food_service.dart
+
+  // Favorites Operations
+  Stream<List<FoodItem>> getFavoriteFoodItems(String userId) {
+    return foodItemsCollection
+        .where('isAvailable', isEqualTo: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => FoodItem.fromMap({
+                  'id': doc.id,
+                  ...doc.data() as Map<String, dynamic>,
+                }),
+              )
+              .where((item) => item.isFavorite)
+              .toList(),
+        );
+  }
+
+  Future<void> toggleFavoriteStatus(String foodItemId, bool isFavorite) async {
+    try {
+      await foodItemsCollection.doc(foodItemId).update({
+        'isFavorite': isFavorite,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to toggle favorite status: $e');
+    }
+  }
+
+  Stream<List<FoodItem>> getUserFavorites(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('favorites')
+        .snapshots()
+        .asyncMap((favoritesSnapshot) async {
+          final favoriteIds = favoritesSnapshot.docs
+              .map((doc) => doc.id)
+              .toList();
+
+          if (favoriteIds.isEmpty) return [];
+
+          final foodItemsSnapshot = await foodItemsCollection
+              .where(FieldPath.documentId, whereIn: favoriteIds)
+              .where('isAvailable', isEqualTo: true)
+              .get();
+
+          return foodItemsSnapshot.docs
+              .map(
+                (doc) => FoodItem.fromMap({
+                  'id': doc.id,
+                  ...doc.data() as Map<String, dynamic>,
+                }),
+              )
+              .toList();
+        });
+  }
+
+  Future<void> addToFavorites(String userId, String foodItemId) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('favorites')
+          .doc(foodItemId)
+          .set({'addedAt': FieldValue.serverTimestamp()});
+    } catch (e) {
+      throw Exception('Failed to add to favorites: $e');
+    }
+  }
+
+  Future<void> removeFromFavorites(String userId, String foodItemId) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('favorites')
+          .doc(foodItemId)
+          .delete();
+    } catch (e) {
+      throw Exception('Failed to remove from favorites: $e');
+    }
+  }
+
+  // Check if item is favorite
+  Stream<bool> isItemFavorite(String userId, String foodItemId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('favorites')
+        .doc(foodItemId)
+        .snapshots()
+        .map((doc) => doc.exists);
   }
 
   Future<void> addFoodItem(FoodItem foodItem) async {

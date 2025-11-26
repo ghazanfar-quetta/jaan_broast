@@ -62,4 +62,32 @@ class LocalStorageService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_notificationPermissionAskedKey) ?? false;
   }
+  // Add to LocalStorageService class in lib/core/services/local_storage_service.dart
+
+  // Favorites caching
+  static Future<void> cacheFavorites(List<String> foodItemIds) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('cached_favorites', foodItemIds);
+  }
+
+  static Future<List<String>> getCachedFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList('cached_favorites') ?? [];
+  }
+
+  static Future<void> addToCachedFavorites(String foodItemId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentFavorites = await getCachedFavorites();
+    if (!currentFavorites.contains(foodItemId)) {
+      currentFavorites.add(foodItemId);
+      await prefs.setStringList('cached_favorites', currentFavorites);
+    }
+  }
+
+  static Future<void> removeFromCachedFavorites(String foodItemId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentFavorites = await getCachedFavorites();
+    currentFavorites.remove(foodItemId);
+    await prefs.setStringList('cached_favorites', currentFavorites);
+  }
 }

@@ -1,3 +1,4 @@
+// lib/core/constants/app_constants.dart
 class AppConstants {
   static const String appName = 'Jaan Broast';
   static const String location = 'Quetta';

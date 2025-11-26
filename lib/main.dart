@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -16,6 +17,8 @@ import 'core/services/permission_service.dart';
 import 'package:jaan_broast/routes.dart';
 // Add this import for custom themes
 import 'core/constants/app_themes.dart';
+import 'features/favorites/presentation/view_models/favorites_view_model.dart';
+import 'core/services/favorites_manager_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +62,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => LocationViewModel(),
         ), // Add this line
+        ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
+        ChangeNotifierProvider(create: (_) => FavoritesManagerService()),
       ],
       child: MaterialApp(
         title: 'Jaan Broast',

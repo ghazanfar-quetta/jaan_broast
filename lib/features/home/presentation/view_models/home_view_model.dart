@@ -1,8 +1,11 @@
 // lib/features/home/presentation/view_models/home_view_model.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import '../../domain/models/food_category.dart';
 import '../../domain/models/food_item.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:jaan_broast/core/services/favorites_manager_service.dart';
 
 class HomeViewModel with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -13,16 +16,16 @@ class HomeViewModel with ChangeNotifier {
   String _searchQuery = '';
   bool _isLoading = false;
   String _error = '';
-  List<String> _favoriteItemIds = [];
+  int _activeCategoryIndex = 0;
 
   // Getters
   List<FoodCategory> get categories => _categories;
   List<FoodItem> get menuItems => _menuItems;
-  List<String> get favoriteItemIds => _favoriteItemIds;
-  String get selectedCategoryId => _selectedCategoryId; // Make sure this exists
+  String get selectedCategoryId => _selectedCategoryId;
   bool get isLoading => _isLoading;
   String get error => _error;
   bool get isCategorySelected => _selectedCategoryId.isNotEmpty;
+  int get activeCategoryIndex => _activeCategoryIndex;
 
   // Get category name by ID
   String getCategoryName(String categoryId) {
@@ -56,44 +59,71 @@ class HomeViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  // Toggle favorite status
-  void toggleFavorite(String itemId) {
+  // Toggle favorite status using shared service
+  Future<void> toggleFavorite(String itemId, BuildContext context) async {
+    final favoritesManager = Provider.of<FavoritesManagerService>(
+      context,
+      listen: false,
+    );
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    // Check if user is logged in
+    if (currentUser == null) {
+      _showLoginPrompt(context);
+      return;
+    }
+
     final itemIndex = _allMenuItems.indexWhere((item) => item.id == itemId);
     if (itemIndex != -1) {
-      final isCurrentlyFavorite = _favoriteItemIds.contains(itemId);
+      final isCurrentlyFavorite = favoritesManager.isFavorite(itemId);
+      final foodItem = _allMenuItems[itemIndex];
 
-      if (isCurrentlyFavorite) {
-        _favoriteItemIds.remove(itemId);
-      } else {
-        _favoriteItemIds.add(itemId);
+      try {
+        if (isCurrentlyFavorite) {
+          await favoritesManager.removeFromFavorites(itemId);
+        } else {
+          await favoritesManager.addToFavorites(itemId);
+        }
+
+        // Update local state
+        _allMenuItems[itemIndex] = foodItem.copyWith(
+          isFavorite: !isCurrentlyFavorite,
+        );
+
+        // Update filtered items
+        final filteredIndex = _menuItems.indexWhere(
+          (item) => item.id == itemId,
+        );
+        if (filteredIndex != -1) {
+          _menuItems[filteredIndex] = _menuItems[filteredIndex].copyWith(
+            isFavorite: !isCurrentlyFavorite,
+          );
+        }
+
+        print(
+          '${isCurrentlyFavorite ? 'Removed from' : 'Added to'} favorites: ${foodItem.name}',
+        );
+      } catch (e) {
+        print('Error toggling favorite: $e');
+        _showErrorSnackbar(context, 'Failed to update favorites');
+      } finally {
+        notifyListeners();
       }
-
-      // Update the item's favorite status
-      _allMenuItems[itemIndex] = _allMenuItems[itemIndex].copyWith(
-        isFavorite: !isCurrentlyFavorite,
-      );
-
-      // Update filtered menu items
-      _applyFilters();
-
-      notifyListeners();
-
-      print(
-        '${isCurrentlyFavorite ? 'Removed from' : 'Added to'} favorites: ${_allMenuItems[itemIndex].name}',
-      );
     }
   }
 
-  // Check if item is favorite
-  bool isFavorite(String itemId) {
-    return _favoriteItemIds.contains(itemId);
+  // Check if item is favorite using shared service
+  bool isFavorite(String itemId, BuildContext context) {
+    final favoritesManager = Provider.of<FavoritesManagerService>(
+      context,
+      listen: false,
+    );
+    return favoritesManager.isFavorite(itemId);
   }
 
   // Get favorite items
   List<FoodItem> getFavoriteItems() {
-    return _allMenuItems
-        .where((item) => _favoriteItemIds.contains(item.id))
-        .toList();
+    return _allMenuItems.where((item) => item.isFavorite).toList();
   }
 
   void clearSearch() {
@@ -103,7 +133,7 @@ class HomeViewModel with ChangeNotifier {
   }
 
   // Load initial data
-  Future<void> loadInitialData() async {
+  Future<void> loadInitialData(BuildContext context) async {
     _isLoading = true;
     _error = '';
     notifyListeners();
@@ -115,11 +145,23 @@ class HomeViewModel with ChangeNotifier {
       // Load food items from Firebase
       await _loadFoodItemsFromFirebase();
 
-      // Select first category by default
-      if (_categories.isNotEmpty) {
-        _selectedCategoryId = _categories.first.id;
+      // Load favorites through the shared service
+      final favoritesManager = Provider.of<FavoritesManagerService>(
+        context,
+        listen: false,
+      );
+      await favoritesManager.loadUserFavorites();
+
+      // Update favorite status for all items
+      for (int i = 0; i < _allMenuItems.length; i++) {
+        final item = _allMenuItems[i];
+        final isFavorite = favoritesManager.isFavorite(item.id);
+        if (item.isFavorite != isFavorite) {
+          _allMenuItems[i] = item.copyWith(isFavorite: isFavorite);
+        }
       }
 
+      _applyFilters();
       _error = '';
     } catch (e) {
       _error = 'Failed to load data: $e';
@@ -163,144 +205,6 @@ class HomeViewModel with ChangeNotifier {
       print('Error loading food items: $e');
       throw e;
     }
-  }
-
-  // In your HomeViewModel, update the _loadCategories method:
-  void _loadCategories() {
-    _categories = [
-      FoodCategory(
-        id: '1',
-        name: 'Birvani',
-        description: 'Various types of biryanis',
-        imageUrl: '', // You can add image URLs later
-        displayOrder: 1,
-        isActive: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-      FoodCategory(
-        id: '2',
-        name: 'Burgers',
-        description: 'Delicious burgers',
-        imageUrl: '',
-        displayOrder: 2,
-        isActive: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-      FoodCategory(
-        id: '3',
-        name: 'Broast',
-        description: 'Crispy broast chicken',
-        imageUrl: '',
-        displayOrder: 3,
-        isActive: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-      FoodCategory(
-        id: '4',
-        name: 'Bar B.Q',
-        description: 'Barbecue items',
-        imageUrl: '',
-        displayOrder: 4,
-        isActive: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-      FoodCategory(
-        id: '5',
-        name: 'Chinese',
-        description: 'Chinese cuisine',
-        imageUrl: '',
-        displayOrder: 5,
-        isActive: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-    ];
-  }
-
-  void _loadMenuItems() {
-    _allMenuItems = [
-      FoodItem(
-        id: '1',
-        name: 'Chicken Biryani',
-        description:
-            'Delicious chicken biryani with aromatic spices and basmati rice',
-        portions: [
-          FoodPortion(size: 'Single', price: 380.00, serves: 1),
-          FoodPortion(size: 'Double', price: 650.00, serves: 2),
-        ],
-        imageUrl: '',
-        category: '1',
-        tags: ['spicy', 'rice', 'chicken'],
-        isAvailable: true,
-        isFeatured: true,
-        rating: 4.5,
-        ratingCount: 120,
-        preparationTime: 25,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        isFavorite: false,
-      ),
-      FoodItem(
-        id: '2',
-        name: 'Beef Pulao',
-        description: 'Traditional beef pulao with tender beef and rice',
-        portions: [
-          FoodPortion(size: 'Single', price: 380.00, serves: 1),
-          FoodPortion(size: 'Double', price: 700.00, serves: 2),
-        ],
-        imageUrl: '',
-        category: '1',
-        tags: ['rice', 'beef', 'traditional'],
-        isAvailable: true,
-        isFeatured: false,
-        rating: 4.3,
-        ratingCount: 85,
-        preparationTime: 30,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        isFavorite: false,
-      ),
-      FoodItem(
-        id: '3',
-        name: 'Chicken Pulao',
-        description: 'Flavorful chicken pulao with herbs and spices',
-        portions: [FoodPortion(size: 'Single', price: 380.00, serves: 1)],
-        imageUrl: '',
-        category: '1',
-        tags: ['rice', 'chicken', 'herbs'],
-        isAvailable: true,
-        isFeatured: false,
-        rating: 4.2,
-        ratingCount: 75,
-        preparationTime: 20,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        isFavorite: false,
-      ),
-      FoodItem(
-        id: '4',
-        name: 'Jaan Load Box Biryani',
-        description: 'Special loaded biryani box with extra portions',
-        portions: [FoodPortion(size: 'Family', price: 1650.00, serves: 4)],
-        imageUrl: '',
-        category: '1',
-        tags: ['special', 'loaded', 'family'],
-        isAvailable: true,
-        isFeatured: true,
-        rating: 4.8,
-        ratingCount: 45,
-        preparationTime: 35,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        isFavorite: false,
-      ),
-    ];
-
-    _menuItems = _allMenuItems;
   }
 
   // Category selection
@@ -383,14 +287,9 @@ class HomeViewModel with ChangeNotifier {
   }
 
   // Refresh data
-  Future<void> refreshData() async {
-    await loadInitialData();
+  Future<void> refreshData(BuildContext context) async {
+    await loadInitialData(context);
   }
-
-  // Track active category index for scroll synchronization
-  int _activeCategoryIndex = 0;
-
-  int get activeCategoryIndex => _activeCategoryIndex;
 
   void setActiveCategoryIndex(int index) {
     _activeCategoryIndex = index;
@@ -412,5 +311,27 @@ class HomeViewModel with ChangeNotifier {
     _activeCategoryIndex = 0;
     _applyFilters();
     notifyListeners();
+  }
+
+  // Helper methods for snackbars
+  void _showLoginPrompt(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Please log in to add favorites'),
+        duration: Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Login',
+          onPressed: () {
+            Navigator.pushNamed(context, '/auth');
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showErrorSnackbar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: Duration(seconds: 2)),
+    );
   }
 }
