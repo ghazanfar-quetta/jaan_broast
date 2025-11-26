@@ -725,38 +725,50 @@ class _HomeScreenState extends State<HomeScreen> {
             desktop: 20,
           ),
         ),
-        ListView.builder(
+        GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: ScreenUtils.responsiveValue(
+              context,
+              mobile: 2,
+              tablet: 3,
+              desktop: 4,
+            ),
+            crossAxisSpacing: ScreenUtils.responsiveValue(
+              context,
+              mobile: 1,
+              tablet: 2,
+              desktop: 3,
+            ),
+            mainAxisSpacing: ScreenUtils.responsiveValue(
+              context,
+              mobile: 16,
+              tablet: 20,
+              desktop: 24,
+            ),
+            childAspectRatio: ScreenUtils.responsiveValue(
+              context,
+              mobile: 0.7, // More vertical space for text
+              tablet: 0.7,
+              desktop: 0.7,
+            ),
+          ),
           itemCount: menuItems.length,
           itemBuilder: (context, index) {
             final item = menuItems[index];
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: ScreenUtils.responsiveValue(
-                  context,
-                  mobile: 12,
-                  tablet: 16,
-                  desktop: 20,
-                ),
-              ),
-              child: FoodItemCard(
-                name: item.name,
-                portions: item.portions,
-                imageUrl: item.imageUrl,
-                isFavorite: item.isFavorite,
-                onTap: () {
-                  _viewModel.showFoodItemDetails(item);
-                  _openFoodDetails(item);
-                },
-                onAddToCart: () {
-                  _viewModel.addToCart(item);
-                  _showAddToCartMessage(item);
-                },
-                onToggleFavorite: () {
-                  _viewModel.toggleFavorite(item.id); // Add this
-                },
-              ),
+            return FoodItemCard(
+              name: item.name,
+              portions: item.portions,
+              imageUrl: item.imageUrl,
+              isFavorite: item.isFavorite,
+              onTap: () {
+                _viewModel.showFoodItemDetails(item);
+                _openFoodDetails(item);
+              },
+              onToggleFavorite: () {
+                _viewModel.toggleFavorite(item.id);
+              },
             );
           },
         ),
