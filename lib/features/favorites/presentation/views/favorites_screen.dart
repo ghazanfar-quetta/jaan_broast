@@ -51,20 +51,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           // Clear all favorites button
           Consumer<FavoritesViewModel>(
             builder: (context, viewModel, child) {
-              if (viewModel.hasFavorites) {
-                return IconButton(
-                  icon: Icon(
-                    Icons.delete_outline,
-                    size: ScreenUtils.responsiveValue(
-                      context,
-                      mobile: 22,
-                      tablet: 24,
-                      desktop: 26,
-                    ),
-                  ),
-                  onPressed: () => _showClearAllDialog(context),
-                );
-              }
               return const SizedBox.shrink();
             },
           ),
@@ -125,7 +111,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 },
                 onTap: () {
                   // Optional: You can add specific search screen navigation if needed
-                  print('Search field tapped in favorites');
                 },
                 hintText: 'Search in favorites...',
               ),
@@ -152,9 +137,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               padding: EdgeInsets.only(
                 bottom: ScreenUtils.responsiveValue(
                   context,
-                  mobile: 80,
-                  tablet: 80,
-                  desktop: 80,
+                  mobile: 8,
+                  tablet: 8,
+                  desktop: 8,
                 ),
               ),
               child: _buildFavoritesGrid(filteredFavorites),
@@ -179,7 +164,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               desktop: AppConstants.headingSizeMedium,
             ),
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onBackground,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         if (_searchController.text.isEmpty && viewModel.hasFavorites)
@@ -220,9 +205,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               Icons.delete_outline,
               size: ScreenUtils.responsiveValue(
                 context,
-                mobile: 14,
-                tablet: 16,
-                desktop: 18,
+                mobile: 20,
+                tablet: 22,
+                desktop: 24,
               ),
               color: Theme.of(context).colorScheme.error,
             ),
@@ -257,9 +242,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     return GridView.builder(
       padding: ScreenUtils.responsivePadding(
         context,
-        mobile: 16,
-        tablet: 20,
-        desktop: 24,
+        mobile: 5,
+        tablet: 7,
+        desktop: 9,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: ScreenUtils.responsiveValue(
@@ -270,9 +255,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ),
         crossAxisSpacing: ScreenUtils.responsiveValue(
           context,
-          mobile: 16,
-          tablet: 20,
-          desktop: 24,
+          mobile: 1,
+          tablet: 2,
+          desktop: 3,
         ),
         mainAxisSpacing: ScreenUtils.responsiveValue(
           context,
@@ -348,7 +333,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
               color: Theme.of(
                 context,
-              ).colorScheme.onBackground.withOpacity(0.7),
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -490,7 +475,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 tablet: 72,
                 desktop: 80,
               ),
-              color: Theme.of(context).primaryColor.withOpacity(0.5),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
             ),
             SizedBox(
               height: ScreenUtils.responsiveValue(
@@ -533,7 +518,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
                 color: Theme.of(
                   context,
-                ).colorScheme.onBackground.withOpacity(0.7),
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -606,7 +591,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 tablet: 72,
                 desktop: 80,
               ),
-              color: Theme.of(context).primaryColor.withOpacity(0.5),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
             ),
             SizedBox(
               height: ScreenUtils.responsiveValue(
@@ -617,7 +602,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             ),
             Text(
-              'No Favorites Yet',
+              'No favorites added yet!',
               style: TextStyle(
                 fontSize: ScreenUtils.responsiveFontSize(
                   context,
@@ -626,7 +611,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   desktop: AppConstants.headingSizeLarge,
                 ),
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onBackground,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             SizedBox(
@@ -648,7 +633,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
                 color: Theme.of(
                   context,
-                ).colorScheme.onBackground.withOpacity(0.7),
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -715,7 +700,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               tablet: 72,
               desktop: 80,
             ),
-            color: Theme.of(context).primaryColor.withOpacity(0.5),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
           ),
           SizedBox(
             height: ScreenUtils.responsiveValue(
@@ -757,7 +742,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
               color: Theme.of(
                 context,
-              ).colorScheme.onBackground.withOpacity(0.7),
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -766,8 +751,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   void _openFoodDetails(FoodItem item) {
-    // Navigate to food details screen
-    print('Open food details for: ${item.name}');
     // You can implement navigation to food details screen here
   }
 
@@ -807,7 +790,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 style: TextStyle(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onBackground.withOpacity(0.7),
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ),

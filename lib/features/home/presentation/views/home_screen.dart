@@ -256,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Icon(
             iconData,
             size: 64,
-            color: Theme.of(context).primaryColor.withOpacity(0.5),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -266,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fontWeight: FontWeight.bold,
               color: Theme.of(
                 context,
-              ).colorScheme.onBackground.withOpacity(0.7),
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 8),
@@ -276,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 16,
               color: Theme.of(
                 context,
-              ).colorScheme.onBackground.withOpacity(0.5),
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -289,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -298,19 +298,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
-          print('BottomNav tapped: $index');
-
           // Check if trying to navigate to Favorites (index 1)
           if (index == 1) {
             // Favorites is at index 1
             try {
               final currentUser = FirebaseAuth.instance.currentUser;
-              print('User status: ${currentUser?.uid ?? "Not logged in"}');
-              print('Is anonymous: ${currentUser?.isAnonymous ?? false}');
-
               // BLOCK if user is not logged in OR is anonymous
               if (currentUser == null || currentUser.isAnonymous) {
-                print('Showing login prompt - user is guest/anonymous');
                 // Show login prompt and don't navigate
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -327,7 +321,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 return; // Don't change the index or navigate
               }
             } catch (e) {
-              print('Error checking auth: $e');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Please log in to use favorites'),
@@ -349,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedItemColor: Theme.of(context).primaryColor,
         unselectedItemColor: Theme.of(
           context,
-        ).colorScheme.onSurface.withOpacity(0.6),
+        ).colorScheme.onSurface.withValues(alpha: 0.6),
         selectedLabelStyle: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
@@ -383,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Text(
-            'Loading delicious food...',
+            'Loading delicious food for you...',
             style: TextStyle(
               fontSize: ScreenUtils.responsiveFontSize(
                 context,
@@ -393,7 +386,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               color: Theme.of(
                 context,
-              ).colorScheme.onBackground.withOpacity(0.7),
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -667,7 +660,7 @@ class _HomeScreenState extends State<HomeScreen> {
         SizedBox(
           height: ScreenUtils.responsiveValue(
             context,
-            mobile: 100, // Same height as before
+            mobile: 100,
             tablet: 110,
             desktop: 120,
           ),
@@ -868,7 +861,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             childAspectRatio: ScreenUtils.responsiveValue(
               context,
-              mobile: 0.7, // More vertical space for text
+              mobile: 0.7,
               tablet: 0.7,
               desktop: 0.7,
             ),
