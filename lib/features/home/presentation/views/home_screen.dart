@@ -17,7 +17,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 // Import LocationSetupScreen
 import 'package:jaan_broast/features/location/presentation/views/location_setup_screen.dart';
 import 'package:jaan_broast/features/favorites/presentation/views/favorites_screen.dart';
-import 'package:jaan_broast/core/services/favorites_manager_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);

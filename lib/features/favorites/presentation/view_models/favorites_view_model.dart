@@ -143,10 +143,6 @@ class FavoritesViewModel with ChangeNotifier {
   }
 
   // Updated clearAllFavorites method
-
-  // In FavoritesViewModel - Simple and reliable clearAllFavorites
-  // In FavoritesViewModel - Fix context warning and state update issue
-  // In FavoritesViewModel - Fix clearAllFavorites using public methods
   Future<void> clearAllFavorites(BuildContext context) async {
     final currentContext = context;
     final favoritesManager = Provider.of<FavoritesManagerService>(
@@ -167,7 +163,7 @@ class FavoritesViewModel with ChangeNotifier {
       final favoriteItemIds = _favoriteItems.map((item) => item.id).toList();
 
       // Clear using the shared service
-      await favoritesManager.clearAllFavorites();
+      favoritesManager.clearAllFavorites();
 
       // Clear local list
       _favoriteItems.clear();

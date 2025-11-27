@@ -395,23 +395,35 @@ class HomeViewModel with ChangeNotifier {
   // In HomeViewModel - Add these public methods
 
   // Method to clear favorite state for specific items
+  // In HomeViewModel - Add this NEW method for multiple items
   void clearFavoriteStateForItems(List<String> itemIds) {
-    for (String itemId in itemIds) {
-      // Update all menu items
-      for (int i = 0; i < _allMenuItems.length; i++) {
-        if (_allMenuItems[i].id == itemId) {
-          _allMenuItems[i] = _allMenuItems[i].copyWith(isFavorite: false);
-        }
-      }
+    print(
+      'clearFavoriteStateForItems called with ${itemIds.length} items: $itemIds',
+    );
+    int updatedAllItems = 0;
+    int updatedMenuItems = 0;
 
-      // Update filtered menu items
-      for (int i = 0; i < _menuItems.length; i++) {
-        if (_menuItems[i].id == itemId) {
-          _menuItems[i] = _menuItems[i].copyWith(isFavorite: false);
-        }
+    // Update all menu items
+    for (int i = 0; i < _allMenuItems.length; i++) {
+      if (itemIds.contains(_allMenuItems[i].id) &&
+          _allMenuItems[i].isFavorite) {
+        _allMenuItems[i] = _allMenuItems[i].copyWith(isFavorite: false);
+        updatedAllItems++;
       }
     }
+
+    // Update filtered menu items
+    for (int i = 0; i < _menuItems.length; i++) {
+      if (itemIds.contains(_menuItems[i].id) && _menuItems[i].isFavorite) {
+        _menuItems[i] = _menuItems[i].copyWith(isFavorite: false);
+        updatedMenuItems++;
+      }
+    }
+
+    print('Updated $updatedAllItems items in _allMenuItems');
+    print('Updated $updatedMenuItems items in _menuItems');
     notifyListeners();
+    print('Notified listeners in clearFavoriteStateForItems');
   }
 
   // Method to clear favorite state for a single item
