@@ -25,7 +25,7 @@ class FavoritesViewModel with ChangeNotifier {
   int get favoritesCount => _favoriteItems.length;
 
   // Load user favorites using the shared service
-  // In FavoritesViewModel - replace the loadUserFavorites method
+  // In FavoritesViewModel - Update loadUserFavorites method
   Future<void> loadUserFavorites(BuildContext context) async {
     final favoritesManager = Provider.of<FavoritesManagerService>(
       context,
@@ -33,10 +33,12 @@ class FavoritesViewModel with ChangeNotifier {
     );
     final currentUser = _auth.currentUser;
 
+    // BLOCK GUEST USERS COMPLETELY
     if (currentUser == null) {
       _error = 'Please log in to view favorites';
       _hasData = false;
       _favoriteItems = [];
+      _isLoading = false;
       notifyListeners();
       return;
     }
@@ -46,7 +48,7 @@ class FavoritesViewModel with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Load favorites through the shared service (this handles local + Firestore sync)
+      // Load favorites through the shared service
       await favoritesManager.loadUserFavorites();
 
       // Get favorite item IDs from shared service

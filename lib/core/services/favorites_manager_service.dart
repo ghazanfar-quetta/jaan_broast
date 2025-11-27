@@ -12,17 +12,17 @@ class FavoritesManagerService with ChangeNotifier {
 
   List<String> get favoriteItemIds => _favoriteItemIds;
 
-  // Load user favorites with local storage priority
+  // Load user favorites with proper guest handling
   Future<void> loadUserFavorites() async {
     final currentUser = _auth.currentUser;
 
-    // If user is not logged in (guest), don't load favorites
-    if (currentUser == null) {
+    // If user is not logged in (guest), clear all favorites
+    if (currentUser == null || currentUser.isAnonymous) {
       _favoriteItemIds = [];
+      await LocalStorageService.cacheFavorites([]);
       notifyListeners();
       return;
     }
-
     try {
       // Step 1: Try to load from local storage first
       final cachedFavorites = await LocalStorageService.getCachedFavorites();
@@ -62,8 +62,10 @@ class FavoritesManagerService with ChangeNotifier {
   Future<void> addToFavorites(String itemId) async {
     final currentUser = _auth.currentUser;
 
-    // If user is not logged in (guest), don't add to favorites
-    if (currentUser == null) return;
+    // If user is not logged in (guest), throw exception to show login prompt
+    if (currentUser == null || currentUser.isAnonymous) {
+      throw Exception('Please log in to add favorites');
+    }
 
     try {
       // Add to Firestore
@@ -92,8 +94,10 @@ class FavoritesManagerService with ChangeNotifier {
   Future<void> removeFromFavorites(String itemId) async {
     final currentUser = _auth.currentUser;
 
-    // If user is not logged in (guest), don't remove favorites
-    if (currentUser == null) return;
+    // If user is not logged in (guest), throw exception
+    if (currentUser == null || currentUser.isAnonymous) {
+      throw Exception('Please log in to add favorites');
+    }
 
     try {
       // Remove from Firestore
@@ -120,8 +124,10 @@ class FavoritesManagerService with ChangeNotifier {
   Future<void> clearAllFavorites() async {
     final currentUser = _auth.currentUser;
 
-    // If user is not logged in (guest), don't clear favorites
-    if (currentUser == null) return;
+    // If user is not logged in (guest), throw exception
+    if (currentUser == null || currentUser.isAnonymous) {
+      throw Exception('Please log in to add favorites');
+    }
 
     try {
       // Clear from Firestore

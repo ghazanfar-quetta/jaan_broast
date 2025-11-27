@@ -17,6 +17,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 // Import LocationSetupScreen
 import 'package:jaan_broast/features/location/presentation/views/location_setup_screen.dart';
 import 'package:jaan_broast/features/favorites/presentation/views/favorites_screen.dart';
+import 'package:jaan_broast/core/services/favorites_manager_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -298,6 +299,47 @@ class _HomeScreenState extends State<HomeScreen> {
       child: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          print('BottomNav tapped: $index');
+
+          // Check if trying to navigate to Favorites (index 1)
+          if (index == 1) {
+            // Favorites is at index 1
+            try {
+              final currentUser = FirebaseAuth.instance.currentUser;
+              print('User status: ${currentUser?.uid ?? "Not logged in"}');
+              print('Is anonymous: ${currentUser?.isAnonymous ?? false}');
+
+              // BLOCK if user is not logged in OR is anonymous
+              if (currentUser == null || currentUser.isAnonymous) {
+                print('Showing login prompt - user is guest/anonymous');
+                // Show login prompt and don't navigate
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Please log in to use favorites'),
+                    duration: Duration(seconds: 3),
+                    action: SnackBarAction(
+                      label: 'Login',
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/auth');
+                      },
+                    ),
+                  ),
+                );
+                return; // Don't change the index or navigate
+              }
+            } catch (e) {
+              print('Error checking auth: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Please log in to use favorites'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              return;
+            }
+          }
+
+          // If user is properly logged in or it's not favorites tab, proceed with navigation
           setState(() {
             _currentIndex = index;
           });

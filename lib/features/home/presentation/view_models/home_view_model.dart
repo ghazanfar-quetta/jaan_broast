@@ -60,6 +60,7 @@ class HomeViewModel with ChangeNotifier {
   }
 
   // Toggle favorite status using shared service
+  // In HomeViewModel - Update the toggleFavorite method
   Future<void> toggleFavorite(String itemId, BuildContext context) async {
     final favoritesManager = Provider.of<FavoritesManagerService>(
       context,
@@ -67,7 +68,7 @@ class HomeViewModel with ChangeNotifier {
     );
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    // Check if user is logged in
+    // Check if user is logged in FIRST - before any operations
     if (currentUser == null) {
       _showLoginPrompt(context);
       return;
@@ -105,7 +106,11 @@ class HomeViewModel with ChangeNotifier {
         );
       } catch (e) {
         print('Error toggling favorite: $e');
-        _showErrorSnackbar(context, 'Failed to update favorites');
+        if (e.toString().contains('Please log in')) {
+          _showLoginPrompt(context);
+        } else {
+          _showErrorSnackbar(context, 'Failed to update favorites');
+        }
       } finally {
         notifyListeners();
       }
