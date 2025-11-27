@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../../home/domain/models/food_item.dart';
 import 'package:jaan_broast/core/services/favorites_manager_service.dart';
-import 'package:provider/provider.dart';
 import 'package:jaan_broast/features/home/presentation/view_models/home_view_model.dart';
 
 class FavoritesViewModel with ChangeNotifier {
@@ -26,6 +25,7 @@ class FavoritesViewModel with ChangeNotifier {
   int get favoritesCount => _favoriteItems.length;
 
   // Load user favorites using the shared service
+  // In FavoritesViewModel - replace the loadUserFavorites method
   Future<void> loadUserFavorites(BuildContext context) async {
     final favoritesManager = Provider.of<FavoritesManagerService>(
       context,
@@ -36,6 +36,7 @@ class FavoritesViewModel with ChangeNotifier {
     if (currentUser == null) {
       _error = 'Please log in to view favorites';
       _hasData = false;
+      _favoriteItems = [];
       notifyListeners();
       return;
     }
@@ -45,6 +46,9 @@ class FavoritesViewModel with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Load favorites through the shared service (this handles local + Firestore sync)
+      await favoritesManager.loadUserFavorites();
+
       // Get favorite item IDs from shared service
       final favoriteIds = favoritesManager.favoriteItemIds;
 
@@ -56,7 +60,7 @@ class FavoritesViewModel with ChangeNotifier {
         return;
       }
 
-      // Get the actual food items for these IDs
+      // Get the actual food items for these IDs from Firestore
       final foodItemsSnapshot = await _firestore
           .collection('foodItems')
           .where(FieldPath.documentId, whereIn: favoriteIds)
@@ -89,7 +93,14 @@ class FavoritesViewModel with ChangeNotifier {
   }
 
   // Remove item from favorites using shared service
-  Future<void> removeFromFavorites(String itemId, BuildContext context) async {
+  Future<void> removeFromFavorites(
+    String foodItemId,
+    BuildContext context,
+  ) async {
+    final favoritesManager = Provider.of<FavoritesManagerService>(
+      context,
+      listen: false,
+    );
     final currentUser = _auth.currentUser;
 
     if (currentUser == null) {
@@ -98,31 +109,35 @@ class FavoritesViewModel with ChangeNotifier {
     }
 
     try {
-      // Remove from Firebase
-      await _firestore
+      // Remove from Firestore
+      final favRef = _firestore
           .collection('users')
           .doc(currentUser.uid)
           .collection('favorites')
-          .doc(itemId)
-          .delete();
+          .doc(foodItemId);
+      await favRef.delete();
 
-      // Remove from local list
-      _favoriteItems.removeWhere((item) => item.id == itemId);
+      // Remove from local storage using shared service
+      await favoritesManager.removeFromFavorites(foodItemId);
 
-      // NOTIFY HOME VIEW MODEL TO REFRESH
-      final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
-      await homeViewModel.refreshData(context); // This will reload home data
+      // Remove locally from current list
+      _favoriteItems.removeWhere((item) => item.id == foodItemId);
 
       notifyListeners();
       _showSnackbar(context, 'Removed from favorites', isError: false);
     } catch (e) {
       print('Error removing favorite: $e');
-      _showSnackbar(context, 'Failed to remove from favorites');
+      _showSnackbar(context, 'Failed to remove');
     }
   }
 
   // Clear all favorites using shared service
+  // In FavoritesViewModel - replace the clearAllFavorites method
   Future<void> clearAllFavorites(BuildContext context) async {
+    final favoritesManager = Provider.of<FavoritesManagerService>(
+      context,
+      listen: false,
+    );
     final currentUser = _auth.currentUser;
 
     if (currentUser == null) {
@@ -131,19 +146,8 @@ class FavoritesViewModel with ChangeNotifier {
     }
 
     try {
-      // Get all favorites
-      final favoritesSnapshot = await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .collection('favorites')
-          .get();
-
-      // Delete all in batch
-      final batch = _firestore.batch();
-      for (final doc in favoritesSnapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
+      // Use the shared service to clear all favorites (this will handle both local and Firestore)
+      await favoritesManager.clearAllFavorites();
 
       // Clear local list
       _favoriteItems.clear();

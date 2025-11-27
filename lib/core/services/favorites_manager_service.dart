@@ -1,6 +1,8 @@
+// lib/core/services/favorites_manager_service.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'local_storage_service.dart';
 
 class FavoritesManagerService with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -10,31 +12,61 @@ class FavoritesManagerService with ChangeNotifier {
 
   List<String> get favoriteItemIds => _favoriteItemIds;
 
-  // Load user favorites
+  // Load user favorites with local storage priority
   Future<void> loadUserFavorites() async {
     final currentUser = _auth.currentUser;
-    if (currentUser == null) return;
+
+    // If user is not logged in (guest), don't load favorites
+    if (currentUser == null) {
+      _favoriteItemIds = [];
+      notifyListeners();
+      return;
+    }
 
     try {
-      final favoritesSnapshot = await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .collection('favorites')
-          .get();
+      // Step 1: Try to load from local storage first
+      final cachedFavorites = await LocalStorageService.getCachedFavorites();
 
-      _favoriteItemIds = favoritesSnapshot.docs.map((doc) => doc.id).toList();
-      notifyListeners();
+      if (cachedFavorites.isNotEmpty) {
+        // Use cached favorites and sync with Firestore
+        _favoriteItemIds = cachedFavorites;
+        notifyListeners();
+
+        // Sync local with Firestore in background
+        _syncLocalWithFirestore(cachedFavorites);
+      } else {
+        // Step 2: If no local data, load from Firestore
+        final favoritesSnapshot = await _firestore
+            .collection('users')
+            .doc(currentUser.uid)
+            .collection('favorites')
+            .get();
+
+        _favoriteItemIds = favoritesSnapshot.docs.map((doc) => doc.id).toList();
+
+        // Cache the Firestore data locally
+        await LocalStorageService.cacheFavorites(_favoriteItemIds);
+
+        notifyListeners();
+      }
     } catch (e) {
       print('Error loading favorites in FavoritesManager: $e');
+      // If Firestore fails, try to use local cache as fallback
+      final cachedFavorites = await LocalStorageService.getCachedFavorites();
+      _favoriteItemIds = cachedFavorites;
+      notifyListeners();
     }
   }
 
-  // Add to favorites
+  // Add to favorites - sync both local and Firestore
   Future<void> addToFavorites(String itemId) async {
     final currentUser = _auth.currentUser;
+
+    // If user is not logged in (guest), don't add to favorites
     if (currentUser == null) return;
 
     try {
+      // Add to Firestore
       await _firestore
           .collection('users')
           .doc(currentUser.uid)
@@ -42,6 +74,10 @@ class FavoritesManagerService with ChangeNotifier {
           .doc(itemId)
           .set({'addedAt': FieldValue.serverTimestamp()});
 
+      // Add to local storage
+      await LocalStorageService.addToCachedFavorites(itemId);
+
+      // Update local state
       if (!_favoriteItemIds.contains(itemId)) {
         _favoriteItemIds.add(itemId);
       }
@@ -52,12 +88,15 @@ class FavoritesManagerService with ChangeNotifier {
     }
   }
 
-  // Remove from favorites
+  // Remove from favorites - sync both local and Firestore
   Future<void> removeFromFavorites(String itemId) async {
     final currentUser = _auth.currentUser;
+
+    // If user is not logged in (guest), don't remove favorites
     if (currentUser == null) return;
 
     try {
+      // Remove from Firestore
       await _firestore
           .collection('users')
           .doc(currentUser.uid)
@@ -65,6 +104,10 @@ class FavoritesManagerService with ChangeNotifier {
           .doc(itemId)
           .delete();
 
+      // Remove from local storage
+      await LocalStorageService.removeFromCachedFavorites(itemId);
+
+      // Update local state
       _favoriteItemIds.remove(itemId);
       notifyListeners();
     } catch (e) {
@@ -73,12 +116,15 @@ class FavoritesManagerService with ChangeNotifier {
     }
   }
 
-  // Clear all favorites
+  // Clear all favorites - sync both local and Firestore
   Future<void> clearAllFavorites() async {
     final currentUser = _auth.currentUser;
+
+    // If user is not logged in (guest), don't clear favorites
     if (currentUser == null) return;
 
     try {
+      // Clear from Firestore
       final favoritesSnapshot = await _firestore
           .collection('users')
           .doc(currentUser.uid)
@@ -91,6 +137,10 @@ class FavoritesManagerService with ChangeNotifier {
       }
       await batch.commit();
 
+      // Clear from local storage
+      await LocalStorageService.cacheFavorites([]);
+
+      // Update local state
       _favoriteItemIds.clear();
       notifyListeners();
     } catch (e) {
@@ -102,5 +152,52 @@ class FavoritesManagerService with ChangeNotifier {
   // Check if item is favorite
   bool isFavorite(String itemId) {
     return _favoriteItemIds.contains(itemId);
+  }
+
+  // Private method to sync local storage with Firestore
+  Future<void> _syncLocalWithFirestore(List<String> localFavorites) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      // Get current Firestore favorites
+      final firestoreSnapshot = await _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('favorites')
+          .get();
+
+      final firestoreFavorites = firestoreSnapshot.docs
+          .map((doc) => doc.id)
+          .toList();
+
+      // Find differences and sync
+      final batch = _firestore.batch();
+      final userFavoritesRef = _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('favorites');
+
+      // Add missing items to Firestore
+      for (final itemId in localFavorites) {
+        if (!firestoreFavorites.contains(itemId)) {
+          batch.set(userFavoritesRef.doc(itemId), {
+            'addedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      // Remove extra items from Firestore (if any)
+      for (final itemId in firestoreFavorites) {
+        if (!localFavorites.contains(itemId)) {
+          batch.delete(userFavoritesRef.doc(itemId));
+        }
+      }
+
+      await batch.commit();
+    } catch (e) {
+      print('Error syncing local with Firestore: $e');
+      // If sync fails, we'll keep using local data
+    }
   }
 }

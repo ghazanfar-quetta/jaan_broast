@@ -85,12 +85,32 @@ class FirestoreFoodService {
         );
   }
 
-  Future<void> toggleFavoriteStatus(String foodItemId, bool isFavorite) async {
+  Future<void> toggleFavoriteStatus(
+    String foodItemId,
+    bool isFavorite,
+    String uid,
+    FoodItem item,
+  ) async {
+    final favRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('favorites')
+        .doc(foodItemId);
+
     try {
-      await foodItemsCollection.doc(foodItemId).update({
-        'isFavorite': isFavorite,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      if (isFavorite) {
+        // ADD DOCUMENT FOR FAVORITE
+        await favRef.set({
+          'id': item.id,
+          'name': item.name,
+          'imageUrl': item.imageUrl,
+          'category': item.category,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      } else {
+        // REMOVE FAVORITE
+        await favRef.delete();
+      }
     } catch (e) {
       throw Exception('Failed to toggle favorite status: $e');
     }
@@ -241,5 +261,49 @@ class FirestoreFoodService {
               )
               .toList(),
         );
+  }
+
+  /// Add a favorite for a user (creates users/{uid}/favorites/{foodItemId})
+  Future<void> addFavorite({
+    required String uid,
+    required FoodItem item,
+  }) async {
+    final favRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('favorites')
+        .doc(item.id);
+
+    try {
+      await favRef.set({
+        'id': item.id,
+        'name': item.name,
+        'imageUrl': item.imageUrl,
+        'category': item.category,
+        // any other fields you want to keep
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to add favorite: $e');
+    }
+  }
+
+  /// Remove a favorite for a user
+  Future<void> removeFavorite({
+    required String uid,
+    required String foodItemId,
+  }) async {
+    final favRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('favorites')
+        .doc(foodItemId);
+
+    try {
+      await favRef.delete();
+    } catch (e) {
+      // If doc doesn't exist, deletion will still pass; still catch unexpected errors
+      throw Exception('Failed to remove favorite: $e');
+    }
   }
 }
