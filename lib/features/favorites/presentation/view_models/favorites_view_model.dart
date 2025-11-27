@@ -95,99 +95,101 @@ class FavoritesViewModel with ChangeNotifier {
   }
 
   // Remove item from favorites using shared service
+  // In FavoritesViewModel - Fix removeFromFavorites context warning
+  // In FavoritesViewModel - Fix removeFromFavorites using public method
   Future<void> removeFromFavorites(
     String foodItemId,
     BuildContext context,
   ) async {
+    final currentContext = context;
     final favoritesManager = Provider.of<FavoritesManagerService>(
-      context,
+      currentContext,
       listen: false,
     );
     final currentUser = _auth.currentUser;
 
-    if (currentUser == null) {
-      _showSnackbar(context, 'Please log in to manage favorites');
+    if (currentUser == null || currentUser.isAnonymous) {
+      if (currentContext.mounted) {
+        _showSnackbar(currentContext, 'Please log in to manage favorites');
+      }
       return;
     }
 
     try {
-      // Remove from Firestore
-      final favRef = _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .collection('favorites')
-          .doc(foodItemId);
-      await favRef.delete();
-
-      // Remove from local storage using shared service
+      // Remove from both Firestore and local storage
       await favoritesManager.removeFromFavorites(foodItemId);
 
       // Remove locally from current list
       _favoriteItems.removeWhere((item) => item.id == foodItemId);
 
+      // Update HomeViewModel using public method
+      final homeViewModel = Provider.of<HomeViewModel>(
+        currentContext,
+        listen: false,
+      );
+      homeViewModel.clearFavoriteStateForItem(foodItemId);
+
       notifyListeners();
-      _showSnackbar(context, 'Removed from favorites', isError: false);
+
+      if (currentContext.mounted) {
+        _showSnackbar(currentContext, 'Removed from favorites', isError: false);
+      }
     } catch (e) {
       print('Error removing favorite: $e');
-      _showSnackbar(context, 'Failed to remove');
+      if (currentContext.mounted) {
+        _showSnackbar(currentContext, 'Failed to remove');
+      }
     }
   }
 
-  // Clear all favorites using shared service
-  // In FavoritesViewModel - replace the clearAllFavorites method
+  // Updated clearAllFavorites method
+
+  // In FavoritesViewModel - Simple and reliable clearAllFavorites
+  // In FavoritesViewModel - Fix context warning and state update issue
+  // In FavoritesViewModel - Fix clearAllFavorites using public methods
   Future<void> clearAllFavorites(BuildContext context) async {
+    final currentContext = context;
     final favoritesManager = Provider.of<FavoritesManagerService>(
-      context,
+      currentContext,
       listen: false,
     );
     final currentUser = _auth.currentUser;
 
-    if (currentUser == null) {
-      _showSnackbar(context, 'Please log in to manage favorites');
+    if (currentUser == null || currentUser.isAnonymous) {
+      if (currentContext.mounted) {
+        _showSnackbar(currentContext, 'Please log in to manage favorites');
+      }
       return;
     }
 
     try {
-      // Use the shared service to clear all favorites (this will handle both local and Firestore)
+      // Get item IDs before clearing (for HomeViewModel update)
+      final favoriteItemIds = _favoriteItems.map((item) => item.id).toList();
+
+      // Clear using the shared service
       await favoritesManager.clearAllFavorites();
 
       // Clear local list
       _favoriteItems.clear();
 
-      // NOTIFY HOME VIEW MODEL TO REFRESH
-      final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
-      await homeViewModel.refreshData(context); // This will reload home data
+      // Update HomeViewModel using public method
+      final homeViewModel = Provider.of<HomeViewModel>(
+        currentContext,
+        listen: false,
+      );
+      homeViewModel.clearFavoriteStateForItems(favoriteItemIds);
 
-      notifyListeners();
-      _showSnackbar(context, 'All favorites cleared', isError: false);
+      if (currentContext.mounted) {
+        _showSnackbar(currentContext, 'All favorites cleared', isError: false);
+      }
     } catch (e) {
       print('Error clearing favorites: $e');
-      _showSnackbar(context, 'Failed to clear favorites');
+      if (currentContext.mounted) {
+        _showSnackbar(currentContext, 'Failed to clear favorites');
+      }
+    } finally {
+      notifyListeners();
     }
-  }
-
-  // Check if user is logged in
-  bool get isUserLoggedIn => _auth.currentUser != null;
-
-  // Refresh favorites
-  Future<void> refreshFavorites(BuildContext context) async {
-    await loadUserFavorites(context);
-  }
-
-  // Search within favorites
-  List<FoodItem> searchFavorites(String query) {
-    if (query.isEmpty) return _favoriteItems;
-
-    return _favoriteItems
-        .where(
-          (item) =>
-              item.name.toLowerCase().contains(query.toLowerCase()) ||
-              item.description.toLowerCase().contains(query.toLowerCase()) ||
-              item.tags.any(
-                (tag) => tag.toLowerCase().contains(query.toLowerCase()),
-              ),
-        )
-        .toList();
   }
 
   // Helper method to show snackbar
@@ -203,5 +205,33 @@ class FavoritesViewModel with ChangeNotifier {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+  // Add these methods to FavoritesViewModel class
+
+  // Check if user is logged in (non-anonymous)
+  bool get isUserLoggedIn {
+    final currentUser = _auth.currentUser;
+    return currentUser != null && !currentUser.isAnonymous;
+  }
+
+  // Refresh favorites - this should already exist but let's verify
+  Future<void> refreshFavorites(BuildContext context) async {
+    await loadUserFavorites(context);
+  }
+
+  // In FavoritesViewModel - Add the searchFavorites method
+  List<FoodItem> searchFavorites(String query) {
+    if (query.isEmpty) return _favoriteItems;
+
+    return _favoriteItems
+        .where(
+          (item) =>
+              item.name.toLowerCase().contains(query.toLowerCase()) ||
+              item.description.toLowerCase().contains(query.toLowerCase()) ||
+              item.tags.any(
+                (tag) => tag.toLowerCase().contains(query.toLowerCase()),
+              ),
+        )
+        .toList();
   }
 }

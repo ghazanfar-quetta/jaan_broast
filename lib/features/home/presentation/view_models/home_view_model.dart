@@ -61,16 +61,19 @@ class HomeViewModel with ChangeNotifier {
 
   // Toggle favorite status using shared service
   // In HomeViewModel - Update the toggleFavorite method
+  // In HomeViewModel - Fix toggleFavorite context warning
   Future<void> toggleFavorite(String itemId, BuildContext context) async {
+    final currentContext = context; // Store context locally
     final favoritesManager = Provider.of<FavoritesManagerService>(
-      context,
+      currentContext,
       listen: false,
     );
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    // Check if user is logged in FIRST - before any operations
-    if (currentUser == null) {
-      _showLoginPrompt(context);
+    if (currentUser == null || currentUser.isAnonymous) {
+      if (currentContext.mounted) {
+        _showLoginPrompt(currentContext);
+      }
       return;
     }
 
@@ -106,10 +109,12 @@ class HomeViewModel with ChangeNotifier {
         );
       } catch (e) {
         print('Error toggling favorite: $e');
-        if (e.toString().contains('Please log in')) {
-          _showLoginPrompt(context);
-        } else {
-          _showErrorSnackbar(context, 'Failed to update favorites');
+        if (currentContext.mounted) {
+          if (e.toString().contains('Please log in')) {
+            _showLoginPrompt(currentContext);
+          } else {
+            _showErrorSnackbar(currentContext, 'Failed to update favorites');
+          }
         }
       } finally {
         notifyListeners();
@@ -156,15 +161,7 @@ class HomeViewModel with ChangeNotifier {
         listen: false,
       );
       await favoritesManager.loadUserFavorites();
-
-      // Update favorite status for all items
-      for (int i = 0; i < _allMenuItems.length; i++) {
-        final item = _allMenuItems[i];
-        final isFavorite = favoritesManager.isFavorite(item.id);
-        if (item.isFavorite != isFavorite) {
-          _allMenuItems[i] = item.copyWith(isFavorite: isFavorite);
-        }
-      }
+      _syncFavoritesWithManager(favoritesManager);
 
       _applyFilters();
       _error = '';
@@ -174,6 +171,24 @@ class HomeViewModel with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  void _syncFavoritesWithManager(FavoritesManagerService favoritesManager) {
+    for (int i = 0; i < _allMenuItems.length; i++) {
+      final item = _allMenuItems[i];
+      final isFavorite = favoritesManager.isFavorite(item.id);
+      if (item.isFavorite != isFavorite) {
+        _allMenuItems[i] = item.copyWith(isFavorite: isFavorite);
+      }
+    }
+
+    for (int i = 0; i < _menuItems.length; i++) {
+      final item = _menuItems[i];
+      final isFavorite = favoritesManager.isFavorite(item.id);
+      if (item.isFavorite != isFavorite) {
+        _menuItems[i] = item.copyWith(isFavorite: isFavorite);
+      }
     }
   }
 
@@ -338,5 +353,104 @@ class HomeViewModel with ChangeNotifier {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: Duration(seconds: 2)),
     );
+  }
+
+  // Add this method to HomeViewModel
+  // In HomeViewModel - Update clearAllFavoriteStates with debug prints
+  void clearAllFavoriteStates() {
+    print('clearAllFavoriteStates called');
+    print(
+      'Before: ${_allMenuItems.where((item) => item.isFavorite).length} favorite items in _allMenuItems',
+    );
+    print(
+      'Before: ${_menuItems.where((item) => item.isFavorite).length} favorite items in _menuItems',
+    );
+
+    // Update all menu items
+    for (int i = 0; i < _allMenuItems.length; i++) {
+      final item = _allMenuItems[i];
+      if (item.isFavorite) {
+        _allMenuItems[i] = item.copyWith(isFavorite: false);
+      }
+    }
+
+    // Update filtered menu items
+    for (int i = 0; i < _menuItems.length; i++) {
+      final item = _menuItems[i];
+      if (item.isFavorite) {
+        _menuItems[i] = item.copyWith(isFavorite: false);
+      }
+    }
+
+    print(
+      'After: ${_allMenuItems.where((item) => item.isFavorite).length} favorite items in _allMenuItems',
+    );
+    print(
+      'After: ${_menuItems.where((item) => item.isFavorite).length} favorite items in _menuItems',
+    );
+
+    notifyListeners();
+    print('Notified listeners');
+  }
+  // In HomeViewModel - Add these public methods
+
+  // Method to clear favorite state for specific items
+  void clearFavoriteStateForItems(List<String> itemIds) {
+    for (String itemId in itemIds) {
+      // Update all menu items
+      for (int i = 0; i < _allMenuItems.length; i++) {
+        if (_allMenuItems[i].id == itemId) {
+          _allMenuItems[i] = _allMenuItems[i].copyWith(isFavorite: false);
+        }
+      }
+
+      // Update filtered menu items
+      for (int i = 0; i < _menuItems.length; i++) {
+        if (_menuItems[i].id == itemId) {
+          _menuItems[i] = _menuItems[i].copyWith(isFavorite: false);
+        }
+      }
+    }
+    notifyListeners();
+  }
+
+  // Method to clear favorite state for a single item
+  void clearFavoriteStateForItem(String itemId) {
+    // Update all menu items
+    for (int i = 0; i < _allMenuItems.length; i++) {
+      if (_allMenuItems[i].id == itemId) {
+        _allMenuItems[i] = _allMenuItems[i].copyWith(isFavorite: false);
+        break;
+      }
+    }
+
+    // Update filtered menu items
+    for (int i = 0; i < _menuItems.length; i++) {
+      if (_menuItems[i].id == itemId) {
+        _menuItems[i] = _menuItems[i].copyWith(isFavorite: false);
+        break;
+      }
+    }
+    notifyListeners();
+  }
+
+  // Method to sync all favorite states with FavoritesManagerService
+  void syncAllFavoriteStates(FavoritesManagerService favoritesManager) {
+    for (int i = 0; i < _allMenuItems.length; i++) {
+      final item = _allMenuItems[i];
+      final isFavorite = favoritesManager.isFavorite(item.id);
+      if (item.isFavorite != isFavorite) {
+        _allMenuItems[i] = item.copyWith(isFavorite: isFavorite);
+      }
+    }
+
+    for (int i = 0; i < _menuItems.length; i++) {
+      final item = _menuItems[i];
+      final isFavorite = favoritesManager.isFavorite(item.id);
+      if (item.isFavorite != isFavorite) {
+        _menuItems[i] = item.copyWith(isFavorite: isFavorite);
+      }
+    }
+    notifyListeners();
   }
 }
