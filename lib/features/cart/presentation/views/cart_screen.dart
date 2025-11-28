@@ -5,6 +5,7 @@ import 'package:jaan_broast/core/constants/button_styles.dart';
 import 'package:jaan_broast/core/utils/screen_utils.dart';
 import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 import 'package:jaan_broast/features/cart/domain/models/cart_item.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CartScreen extends StatefulWidget {
   final bool isOpen;
@@ -374,10 +375,7 @@ class _CartScreenState extends State<CartScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Confirm Order',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        title: Text('Confirm Order'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,6 +385,11 @@ class _CartScreenState extends State<CartScreen>
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Your delivery information will be used from your profile.',
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
             Text(
@@ -411,22 +414,15 @@ class _CartScreenState extends State<CartScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'CANCEL',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
+            child: Text('CANCEL'),
           ),
           ElevatedButton(
             onPressed: () async {
               try {
-                final userId = 'current_user_id';
                 await cartViewModel.checkout(
-                  userId: userId,
                   specialInstructions: instructionsController.text.isEmpty
                       ? null
-                      : instructionsController.text,
+                      : instructionsController.text.trim(),
                 );
                 Navigator.pop(context);
 
@@ -439,20 +435,71 @@ class _CartScreenState extends State<CartScreen>
                 );
               } catch (e) {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to place order: $e'),
-                    backgroundColor: Colors.red,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+
+                if (e.toString().contains('MISSING_USER_INFO')) {
+                  // Redirect to profile setup
+                  _showMissingInfoDialog(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to place order: $e'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
               }
             },
             style: ButtonStyles.primaryButton(context),
-            child: const Text('CONFIRM ORDER'),
+            child: Text('PLACE ORDER'),
           ),
         ],
       ),
     );
+  }
+
+  void _showMissingInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text('Complete Your Profile'),
+        content: Text(
+          'Please complete your profile with name, phone number, and delivery address before placing an order.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('LATER'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); // Close this dialog
+              Navigator.pop(context); // Close checkout dialog
+              // Navigate to profile screen - you'll need to implement this
+              _navigateToProfileScreen(context);
+            },
+            style: ButtonStyles.primaryButton(context),
+            child: Text('UPDATE PROFILE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToProfileScreen(BuildContext context) {
+    // You'll need to implement this based on your app structure
+    // For now, show a message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Please navigate to profile screen to update your information',
+        ),
+        duration: Duration(seconds: 3),
+      ),
+    );
+
+    // TODO: Replace with actual navigation to your profile screen
+    // Example: Navigator.pushNamed(context, '/profile');
   }
 }

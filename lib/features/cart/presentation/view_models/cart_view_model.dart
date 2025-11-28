@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:jaan_broast/features/cart/domain/models/cart_item.dart';
 import 'package:jaan_broast/features/cart/domain/models/order.dart'
     as cart_models;
@@ -85,28 +86,57 @@ class CartViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> checkout({
-    required String userId,
-    String? deliveryAddress,
-    String? specialInstructions,
-    String? customerName,
-    String? customerPhone,
-  }) async {
+  Future<void> checkout({String? specialInstructions}) async {
     if (_cartItems.isEmpty) {
       throw Exception('Cart is empty');
     }
 
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('User must be logged in to checkout');
+    }
+
+    print(
+      '🔍 Checkout started - User: ${user.uid}, IsAnonymous: ${user.isAnonymous}',
+    );
+
+    // Check if user has mandatory info
+    final hasInfo = await hasMandatoryUserInfo();
+
+    if (!hasInfo) {
+      throw Exception('MISSING_USER_INFO');
+    }
+
+    // Fetch user data from Firestore
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!userDoc.exists) {
+      throw Exception('User data not found');
+    }
+
+    final userData = userDoc.data()!;
+    final personalInfo = userData['personalInfo'] as Map<String, dynamic>?;
+    final addressData = userData['address'] as Map<String, dynamic>?;
+
     final order = cart_models.Order(
-      // Use alias
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: userId,
+      userId: user.uid,
       items: List.from(_cartItems),
       totalAmount: totalAmount,
       orderDate: DateTime.now(),
-      deliveryAddress: deliveryAddress,
+      deliveryAddress: addressData?['fullAddress'],
       specialInstructions: specialInstructions,
-      customerName: customerName,
-      customerPhone: customerPhone,
+      customerName: personalInfo?['fullName'],
+      customerPhone: personalInfo?['phoneNumber'],
+      customerEmail: user.email,
+      customerNotes: _buildDeliveryNotes(addressData),
+    );
+
+    print(
+      '🔍 Order created with user data - Name: "${order.customerName}", Phone: "${order.customerPhone}", Address: "${order.deliveryAddress}"',
     );
 
     try {
@@ -116,6 +146,35 @@ class CartViewModel with ChangeNotifier {
     } catch (e) {
       throw Exception('Checkout failed: $e');
     }
+  }
+
+  String _buildDeliveryAddress(Map<String, dynamic> addressData) {
+    final components = [
+      addressData['street'],
+      addressData['city'],
+      addressData['state'],
+      addressData['zipCode'],
+    ].where((component) => component != null && component.isNotEmpty).toList();
+
+    return components.join(', ');
+  }
+
+  String? _buildDeliveryNotes(Map<String, dynamic>? addressData) {
+    if (addressData == null) return null;
+
+    final notes = [
+      if (addressData['houseNumber'] != null)
+        'House: ${addressData['houseNumber']}',
+      if (addressData['apartment'] != null)
+        'Apartment: ${addressData['apartment']}',
+      if (addressData['floor'] != null) 'Floor: ${addressData['floor']}',
+      if (addressData['landmark'] != null)
+        'Landmark: ${addressData['landmark']}',
+      if (addressData['deliveryInstructions'] != null)
+        'Instructions: ${addressData['deliveryInstructions']}',
+    ].where((note) => note != null).toList();
+
+    return notes.isNotEmpty ? notes.join(', ') : null;
   }
 
   // Helper method to create CartItem from FoodItem
@@ -179,5 +238,35 @@ class CartViewModel with ChangeNotifier {
     );
 
     addToCart(cartItem);
+  }
+
+  Future<bool> hasMandatoryUserInfo() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) return false;
+
+      final userData = userDoc.data()!;
+      final personalInfo = userData['personalInfo'] as Map<String, dynamic>?;
+      final addressData = userData['address'] as Map<String, dynamic>?;
+
+      // Check if all mandatory fields are present and not empty
+      final hasName = personalInfo?['fullName']?.toString().isNotEmpty == true;
+      final hasPhone =
+          personalInfo?['phoneNumber']?.toString().isNotEmpty == true;
+      final hasAddress =
+          addressData?['fullAddress']?.toString().isNotEmpty == true;
+
+      return hasName && hasPhone && hasAddress;
+    } catch (e) {
+      print('Error checking user info: $e');
+      return false;
+    }
   }
 }

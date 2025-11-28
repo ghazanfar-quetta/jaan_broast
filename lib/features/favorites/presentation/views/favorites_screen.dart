@@ -49,58 +49,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       children: [
         Scaffold(
           backgroundColor: Theme.of(context).colorScheme.background,
-          appBar: CustomAppBar(
-            title: 'My Favorites',
-            actions: [
-              // Cart Icon with badge
-              Consumer<CartViewModel>(
-                builder: (context, cartViewModel, child) {
-                  return Stack(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.shopping_cart),
-                        onPressed: () {
-                          if (cartViewModel.cartItems.isNotEmpty) {
-                            cartViewModel.openCart();
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Your cart is empty'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                      if (cartViewModel.totalItems > 0)
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            padding: EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.error,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            constraints: BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: Text(
-                              cartViewModel.totalItems.toString(),
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
+          appBar: CustomAppBar(title: 'My Favorites', actions: [
             ],
           ),
           body: Consumer<FavoritesViewModel>(

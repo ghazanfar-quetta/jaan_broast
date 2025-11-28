@@ -8,13 +8,10 @@ import '../../../../../core/widgets/food_category_card.dart';
 import '../../../../../core/widgets/food_item_card.dart';
 import '../../../../../core/widgets/search_field.dart';
 import '../view_models/home_view_model.dart';
-// Add this import for FoodItem
 import '../../domain/models/food_item.dart';
 import 'package:jaan_broast/features/location/presentation/view_models/location_view_model.dart';
-// Add Firebase imports
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// Import LocationSetupScreen
 import 'package:jaan_broast/features/location/presentation/views/location_setup_screen.dart';
 import 'package:jaan_broast/features/favorites/presentation/views/favorites_screen.dart';
 import 'package:jaan_broast/features/cart/presentation/views/cart_screen.dart';
@@ -170,17 +167,51 @@ class _HomeScreenState extends State<HomeScreen> {
           appBar: CustomAppBar(
             title: AppConstants.appName,
             actions: [
-              IconButton(
-                icon: Icon(
-                  Icons.shopping_cart,
-                  size: ScreenUtils.responsiveValue(
-                    context,
-                    mobile: 22,
-                    tablet: 24,
-                    desktop: 26,
-                  ),
-                ),
-                onPressed: _viewCart, // Your existing method
+              // Cart Icon with Badge
+              Consumer<CartViewModel>(
+                builder: (context, cartViewModel, child) {
+                  return Stack(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.shopping_cart,
+                          size: ScreenUtils.responsiveValue(
+                            context,
+                            mobile: 22,
+                            tablet: 24,
+                            desktop: 26,
+                          ),
+                        ),
+                        onPressed: _viewCart,
+                      ),
+                      if (cartViewModel.totalItems > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.error,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            constraints: BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              cartViewModel.totalItems.toString(),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               IconButton(
                 icon: Icon(
@@ -192,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     desktop: 26,
                   ),
                 ),
-                onPressed: _viewProfile, // Your existing method
+                onPressed: _viewProfile,
               ),
             ],
           ),
@@ -923,8 +954,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _viewCart() {
-    // Navigate to cart screen
-    print('Open cart screen');
+    final cartViewModel = context.read<CartViewModel>();
+    if (cartViewModel.cartItems.isNotEmpty) {
+      cartViewModel.openCart();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Your cart is empty'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _viewProfile() {
