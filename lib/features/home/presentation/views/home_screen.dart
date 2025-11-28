@@ -348,33 +348,18 @@ class _HomeScreenState extends State<HomeScreen> {
           // Check if trying to navigate to Favorites (index 1)
           if (index == 1) {
             // Favorites is at index 1
+            // In home_screen.dart - Replace the try-catch block with:
             try {
-              final currentUser = FirebaseAuth.instance.currentUser;
-              // BLOCK if user is not logged in OR is anonymous
-              if (currentUser == null || currentUser.isAnonymous) {
-                // Show login prompt and don't navigate
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Please log in to use favorites'),
-                    duration: Duration(seconds: 3),
-                    action: SnackBarAction(
-                      label: 'Login',
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/auth');
-                      },
-                    ),
-                  ),
-                );
+              // Use the ViewModel to check login and show prompt if needed
+              if (!context.read<HomeViewModel>().checkLoginAndShowPrompt(
+                context,
+                message: 'Please log in to use favorites',
+              )) {
                 return; // Don't change the index or navigate
               }
             } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Please log in to use favorites'),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-              return;
+              // Handle any errors
+              print('Error checking login: $e');
             }
           }
 

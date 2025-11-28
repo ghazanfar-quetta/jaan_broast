@@ -1,3 +1,4 @@
+// lib/features/cart/presentation/views/cart_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:jaan_broast/core/constants/app_constants.dart';
@@ -9,8 +10,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class CartScreen extends StatefulWidget {
   final bool isOpen;
+  final VoidCallback? onOrderMore;
 
-  const CartScreen({super.key, required this.isOpen});
+  const CartScreen({super.key, required this.isOpen, this.onOrderMore});
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -21,6 +23,11 @@ class _CartScreenState extends State<CartScreen>
   late AnimationController _animationController;
   late Animation<double> _slideAnimation;
   late Animation<double> _fadeAnimation;
+  final TextEditingController _specialInstructionsController =
+      TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _instructionsFocusNode = FocusNode();
+  final GlobalKey _instructionsKey = GlobalKey();
 
   @override
   void initState() {
@@ -38,8 +45,56 @@ class _CartScreenState extends State<CartScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
+    // Listen to focus changes to scroll to text field when keyboard appears
+    _instructionsFocusNode.addListener(_onInstructionsFocusChanged);
+
     if (widget.isOpen) {
       _animationController.forward();
+    }
+  }
+
+  void _onInstructionsFocusChanged() {
+    if (_instructionsFocusNode.hasFocus) {
+      // Wait for the next frame to ensure the widget is built, then scroll
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Delay to allow keyboard to appear
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (_scrollController.hasClients) {
+            // Get the position of the special instructions section
+            final context = _instructionsKey.currentContext;
+            if (context != null) {
+              final box = context.findRenderObject() as RenderBox?;
+              if (box != null) {
+                final position = box.localToGlobal(Offset.zero);
+                final scrollPosition = _scrollController.position;
+
+                // Calculate how much we need to scroll to make the text field visible
+                final viewportHeight = scrollPosition.viewportDimension;
+                final textFieldBottom = position.dy + box.size.height;
+                final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+                // If text field is hidden by keyboard, scroll to make it visible
+                if (textFieldBottom > viewportHeight - keyboardHeight) {
+                  final scrollOffset =
+                      textFieldBottom - (viewportHeight - keyboardHeight) + 20;
+                  _scrollController.animateTo(
+                    scrollPosition.pixels + scrollOffset,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                  );
+                }
+              }
+            } else {
+              // Fallback: scroll to bottom if we can't calculate position
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          }
+        });
+      });
     }
   }
 
@@ -56,72 +111,79 @@ class _CartScreenState extends State<CartScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _specialInstructionsController.dispose();
+    _scrollController.dispose();
+    _instructionsFocusNode.removeListener(_onInstructionsFocusChanged);
+    _instructionsFocusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Backdrop
-        GestureDetector(
-          onTap: () => context.read<CartViewModel>().closeCart(),
-          child: AnimatedBuilder(
-            animation: _fadeAnimation,
+    return Material(
+      color: Colors.transparent,
+      child: Stack(
+        children: [
+          // Backdrop
+          GestureDetector(
+            onTap: () => context.read<CartViewModel>().closeCart(),
+            child: AnimatedBuilder(
+              animation: _fadeAnimation,
+              builder: (context, child) {
+                return Container(
+                  color: Colors.black.withOpacity(_fadeAnimation.value * 0.5),
+                );
+              },
+            ),
+          ),
+
+          // Cart Content
+          AnimatedBuilder(
+            animation: _slideAnimation,
             builder: (context, child) {
-              return Container(
-                color: Colors.black.withOpacity(_fadeAnimation.value * 0.5),
+              return Transform.translate(
+                offset: Offset(
+                  0,
+                  _slideAnimation.value * ScreenUtils.getScreenHeight(context),
+                ),
+                child: child,
               );
             },
-          ),
-        ),
-
-        // Cart Content
-        AnimatedBuilder(
-          animation: _slideAnimation,
-          builder: (context, child) {
-            return Transform.translate(
-              offset: Offset(
-                0,
-                _slideAnimation.value * ScreenUtils.getScreenHeight(context),
+            child: Container(
+              height: ScreenUtils.getScreenHeight(context) * 0.8,
+              margin: EdgeInsets.only(
+                top: ScreenUtils.getScreenHeight(context) * 0.2,
               ),
-              child: child,
-            );
-          },
-          child: Container(
-            height: ScreenUtils.getScreenHeight(context) * 0.8,
-            margin: EdgeInsets.only(
-              top: ScreenUtils.getScreenHeight(context) * 0.2,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, -5),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(context),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Header
+                  _buildHeader(context),
 
-                // Cart Items
-                Expanded(child: _buildCartItems(context)),
+                  // Scrollable Cart Content
+                  Expanded(child: _buildCartContent(context)),
 
-                // Checkout Section
-                _buildCheckoutSection(context),
-              ],
+                  // Fixed Checkout Section - Always visible at bottom
+                  _buildCheckoutSection(context),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -153,43 +215,128 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  Widget _buildCartItems(BuildContext context) {
+  Widget _buildCartContent(BuildContext context) {
     final cartViewModel = context.watch<CartViewModel>();
 
     if (cartViewModel.cartItems.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.shopping_cart_outlined,
-              size: 64,
-              color: Theme.of(context).disabledColor,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Your cart is empty',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add some delicious items to get started!',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).disabledColor,
-              ),
-            ),
-          ],
-        ),
-      );
+      return _buildEmptyCart(context);
     }
+
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Column(
+        children: [
+          // Cart Items List
+          _buildCartItemsList(context),
+
+          // Special Instructions Section
+          _buildSpecialInstructionsSection(context),
+
+          // Add some bottom padding to ensure content doesn't hide behind fixed checkout section
+          const SizedBox(
+            height: 150,
+          ), // Increased padding to account for checkout section height
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyCart(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.shopping_cart_outlined,
+          size: 64,
+          color: Theme.of(context).disabledColor,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Your cart is empty',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Add some delicious items to get started!',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).disabledColor,
+          ),
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: () {
+            context.read<CartViewModel>().closeCart();
+            widget.onOrderMore?.call();
+          },
+          style: ButtonStyles.primaryButton(context),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: Text('ORDER NOW'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCartItemsList(BuildContext context) {
+    final cartViewModel = context.watch<CartViewModel>();
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
       itemCount: cartViewModel.cartItems.length,
       itemBuilder: (context, index) {
         final item = cartViewModel.cartItems[index];
         return _buildCartItem(context, item);
       },
+    );
+  }
+
+  Widget _buildSpecialInstructionsSection(BuildContext context) {
+    return Container(
+      key: _instructionsKey,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            width: 1,
+          ),
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Special Instructions (Optional)',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _specialInstructionsController,
+            focusNode: _instructionsFocusNode,
+            maxLines: 2,
+            decoration: InputDecoration(
+              hintText: 'Any special requests or dietary requirements...',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -233,6 +380,16 @@ class _CartScreenState extends State<CartScreen>
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
+                  // Item Description
+                  if (item.description.isNotEmpty)
+                    Text(
+                      item.description,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).disabledColor,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   // Portion Size
                   Text(
                     'Size: ${item.selectedSize}',
@@ -340,27 +497,63 @@ class _CartScreenState extends State<CartScreen>
 
           const SizedBox(height: 16),
 
-          // Checkout Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: cartViewModel.cartItems.isEmpty
-                  ? null
-                  : () {
-                      _showCheckoutDialog(context);
+          // Buttons Row - Both buttons same size and height
+          Row(
+            children: [
+              // Order More Button - Same size and height as checkout
+              Expanded(
+                child: SizedBox(
+                  height: 50, // Fixed height to match checkout button
+                  child: OutlinedButton(
+                    onPressed: () {
+                      context.read<CartViewModel>().closeCart();
+                      widget.onOrderMore?.call();
                     },
-              style: ButtonStyles.primaryButton(context),
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'PROCEED TO CHECKOUT',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                      side: BorderSide(color: Theme.of(context).primaryColor),
+                    ),
+                    child: Text(
+                      'ORDER MORE',
+                      style: TextStyle(
+                        color: Theme.of(context).primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+
+              const SizedBox(width: 12),
+
+              // Proceed to Checkout Button - Same size and height as order more
+              Expanded(
+                child: SizedBox(
+                  height: 50, // Fixed height to match order more button
+                  child: ElevatedButton(
+                    onPressed: cartViewModel.cartItems.isEmpty
+                        ? null
+                        : () {
+                            _showCheckoutDialog(context);
+                          },
+                    style: ButtonStyles.primaryButton(context),
+                    child: Text(
+                      'CHECKOUT',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -369,8 +562,6 @@ class _CartScreenState extends State<CartScreen>
 
   void _showCheckoutDialog(BuildContext context) {
     final cartViewModel = context.read<CartViewModel>();
-    final TextEditingController instructionsController =
-        TextEditingController();
 
     showDialog(
       context: context,
@@ -388,70 +579,97 @@ class _CartScreenState extends State<CartScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'Your delivery information will be used from your profile.',
+              'Your Order will be delivered soon.',
               style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Special Instructions (Optional)',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: instructionsController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'Any special requests or dietary requirements...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppConstants.borderRadius,
-                  ),
-                ),
-              ),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('CANCEL'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await cartViewModel.checkout(
-                  specialInstructions: instructionsController.text.isEmpty
-                      ? null
-                      : instructionsController.text.trim(),
-                );
-                Navigator.pop(context);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Order placed successfully!'),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              } catch (e) {
-                Navigator.pop(context);
-
-                if (e.toString().contains('MISSING_USER_INFO')) {
-                  // Redirect to profile setup
-                  _showMissingInfoDialog(context);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to place order: $e'),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
+          SizedBox(
+            width: double.infinity, // Take full width of dialog
+            child: Row(
+              children: [
+                // Cancel Button - Fixed width
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                        side: BorderSide(color: Theme.of(context).primaryColor),
+                      ),
+                      child: Text(
+                        'CANCEL',
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
                     ),
-                  );
-                }
-              }
-            },
-            style: ButtonStyles.primaryButton(context),
-            child: Text('PLACE ORDER'),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Place Order Button - Fixed width
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          await cartViewModel.checkout(
+                            specialInstructions:
+                                _specialInstructionsController.text.isEmpty
+                                ? null
+                                : _specialInstructionsController.text.trim(),
+                          );
+                          Navigator.pop(context);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Order placed successfully!'),
+                              backgroundColor: Colors.green,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        } catch (e) {
+                          Navigator.pop(context);
+
+                          if (e.toString().contains('MISSING_USER_INFO')) {
+                            // Redirect to profile setup
+                            _showMissingInfoDialog(context);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to place order: $e'),
+                                backgroundColor: Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      style: ButtonStyles.primaryButton(context),
+                      child: Text(
+                        'PLACE ORDER',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

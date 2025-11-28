@@ -334,24 +334,51 @@ class HomeViewModel with ChangeNotifier {
   }
 
   // Helper methods for snackbars
-  void _showLoginPrompt(BuildContext context) {
+  // In home_view_model.dart - Update the existing method
+  void _showLoginPrompt(
+    BuildContext context, {
+    String message = 'Please log in to add favorites',
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Please log in to add favorites'),
-        duration: Duration(seconds: 3),
-        action: SnackBarAction(
-          label: 'Login',
-          onPressed: () {
-            Navigator.pushNamed(context, '/auth');
-          },
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
         ),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        // Removed the SnackBarAction entirely
       ),
     );
   }
 
+  // Add a method to check login and show prompt
+  bool checkLoginAndShowPrompt(
+    BuildContext context, {
+    String message = 'Please log in to add favorites',
+  }) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || currentUser.isAnonymous) {
+      _showLoginPrompt(context, message: message);
+      return false;
+    }
+    return true;
+  }
+
   void _showErrorSnackbar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: Duration(seconds: 2)),
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+        ),
+        duration: const Duration(seconds: 2),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
     );
   }
 

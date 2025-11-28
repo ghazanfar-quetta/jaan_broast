@@ -169,7 +169,7 @@ class FoodItemCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Select Portion Size'),
+        title: Text('Select Serving Size'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: foodItem.portions.map((portion) {

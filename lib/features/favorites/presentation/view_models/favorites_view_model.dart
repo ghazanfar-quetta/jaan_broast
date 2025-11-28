@@ -188,19 +188,25 @@ class FavoritesViewModel with ChangeNotifier {
     }
   }
 
-  // Helper method to show snackbar
   void _showSnackbar(
     BuildContext context,
     String message, {
     bool isError = true,
   }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar() // Clear any existing snackbar
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+          ),
+          backgroundColor: isError ? Colors.red : Colors.green,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
   }
   // Add these methods to FavoritesViewModel class
 
