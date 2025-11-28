@@ -17,6 +17,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 // Import LocationSetupScreen
 import 'package:jaan_broast/features/location/presentation/views/location_setup_screen.dart';
 import 'package:jaan_broast/features/favorites/presentation/views/favorites_screen.dart';
+import 'package:jaan_broast/features/cart/presentation/views/cart_screen.dart';
+import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -160,39 +162,53 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: CustomAppBar(
-        title: AppConstants.appName,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.shopping_cart,
-              size: ScreenUtils.responsiveValue(
-                context,
-                mobile: 22,
-                tablet: 24,
-                desktop: 26,
+    return Stack(
+      children: [
+        Scaffold(
+          // YOUR EXISTING HOME SCREEN CODE EXACTLY AS IT WAS
+          backgroundColor: Theme.of(context).colorScheme.background,
+          appBar: CustomAppBar(
+            title: AppConstants.appName,
+            actions: [
+              IconButton(
+                icon: Icon(
+                  Icons.shopping_cart,
+                  size: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 22,
+                    tablet: 24,
+                    desktop: 26,
+                  ),
+                ),
+                onPressed: _viewCart, // Your existing method
               ),
-            ),
-            onPressed: _viewCart,
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.person,
-              size: ScreenUtils.responsiveValue(
-                context,
-                mobile: 22,
-                tablet: 24,
-                desktop: 26,
+              IconButton(
+                icon: Icon(
+                  Icons.person,
+                  size: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 22,
+                    tablet: 24,
+                    desktop: 26,
+                  ),
+                ),
+                onPressed: _viewProfile, // Your existing method
               ),
-            ),
-            onPressed: _viewProfile,
+            ],
           ),
-        ],
-      ),
-      body: _buildCurrentScreen(),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+          body: _buildCurrentScreen(),
+          bottomNavigationBar: _buildBottomNavigationBar(),
+        ),
+
+        // ONLY ADD THIS CART OVERLAY - NO OTHER CHANGES
+        Consumer<CartViewModel>(
+          builder: (context, cartViewModel, child) {
+            return cartViewModel.isCartOpen
+                ? CartScreen(isOpen: cartViewModel.isCartOpen)
+                : const SizedBox.shrink();
+          },
+        ),
+      ],
     );
   }
 
@@ -881,6 +897,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onToggleFavorite: () {
                 _viewModel.toggleFavorite(item.id, context);
               },
+              foodItem: item,
             );
           },
         ),

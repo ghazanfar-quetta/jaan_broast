@@ -1,32 +1,38 @@
 // lib/core/widgets/food_item_card.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_constants.dart';
 import '../utils/screen_utils.dart';
 import '../../features/home/domain/models/food_item.dart';
+import 'package:jaan_broast/features/cart/presentation/views/cart_screen.dart';
+import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
+import '../constants/button_styles.dart';
+import 'package:jaan_broast/features/home/domain/models/food_item.dart';
+import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 
 class FoodItemCard extends StatelessWidget {
   final String name;
   final List<FoodPortion> portions;
   final String imageUrl;
-  final VoidCallback onTap;
-  final VoidCallback? onToggleFavorite;
   final bool isFavorite;
-  final bool isCompact;
+  final VoidCallback onTap;
+  final VoidCallback onToggleFavorite;
+  final FoodItem? foodItem; // Add this optional parameter
 
   const FoodItemCard({
-    Key? key,
+    super.key,
     required this.name,
     required this.portions,
     required this.imageUrl,
+    required this.isFavorite,
     required this.onTap,
-    this.onToggleFavorite,
-    this.isFavorite = false,
-    this.isCompact = false,
-  }) : super(key: key);
+    required this.onToggleFavorite,
+    this.foodItem, // Add this
+  });
 
   @override
   Widget build(BuildContext context) {
-    final FoodPortion firstPortion = portions.first;
+    final basePrice = portions.isNotEmpty ? portions.first.price : 0.0;
 
     return Card(
       elevation: 2,
@@ -36,224 +42,181 @@ class FoodItemCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        child: Container(
-          padding: EdgeInsets.all(
-            ScreenUtils.responsiveValue(
-              context,
-              mobile: 12,
-              tablet: 14,
-              desktop: 16,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Food Image - Large size
-              Stack(
-                children: [
-                  Container(
-                    height: ScreenUtils.responsiveValue(
-                      context,
-                      mobile: 140,
-                      tablet: 150,
-                      desktop: 160,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Section
+            Stack(
+              children: [
+                Container(
+                  height: 120,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(AppConstants.borderRadius),
+                      topRight: Radius.circular(AppConstants.borderRadius),
                     ),
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.borderRadius,
-                      ),
-                      color: Theme.of(context).colorScheme.surface,
-                      image: imageUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(imageUrl),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
+                    image: DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
                     ),
-                    child: imageUrl.isEmpty
-                        ? Center(
-                            child: Icon(
-                              Icons.fastfood,
-                              size: 50,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                          )
-                        : null,
                   ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    onPressed: onToggleFavorite,
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite
+                          ? Theme.of(context).colorScheme.error
+                          : Colors.white,
+                      size: 20,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black.withOpacity(0.5),
+                      padding: const EdgeInsets.all(4),
+                    ),
+                  ),
+                ),
+              ],
+            ),
 
-                  // Price Tag
-                  Positioned(
-                    bottom: 8,
-                    left: 8,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+            // Content Section
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Food Name
+                    Text(
+                      name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                      decoration: BoxDecoration(
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    // Price
+                    Text(
+                      portions.length <= 1
+                          ? 'Rs${basePrice.toStringAsFixed(2)}'
+                          : 'From Rs${basePrice.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: Theme.of(context).primaryColor,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
+                        fontWeight: FontWeight.bold,
                       ),
-                      child: Text(
-                        firstPortion.formattedPrice,
-                        style: TextStyle(
-                          fontSize: ScreenUtils.responsiveFontSize(
-                            context,
-                            mobile: 10,
-                            tablet: 11,
-                            desktop: 12,
+                    ),
+
+                    // Order Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => _handleOrder(context),
+                        style: ButtonStyles.primaryButton(context).copyWith(
+                          padding: MaterialStateProperty.all(
+                            const EdgeInsets.symmetric(vertical: 8),
                           ),
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                        ),
+                        child: const Text(
+                          'Tap to Order',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-
-              SizedBox(
-                height: ScreenUtils.responsiveValue(
-                  context,
-                  mobile: 5,
-                  tablet: 7,
-                  desktop: 9,
+                  ],
                 ),
               ),
-
-              // Food Name and Favorite Button Row
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Food Name - Flexible container that adjusts to content
-                  Expanded(
-                    child: Container(
-                      constraints: BoxConstraints(
-                        minHeight: ScreenUtils.responsiveValue(
-                          context,
-                          mobile: 100,
-                          tablet: 108,
-                          desktop: 116,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Food Name - Responsive font size with auto height
-                          Text(
-                            name,
-                            style: TextStyle(
-                              fontSize: ScreenUtils.responsiveFontSize(
-                                context,
-                                mobile:
-                                    12, // Smaller for mobile to fit more text
-                                tablet: 13,
-                                desktop: 14,
-                              ),
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onBackground,
-                              height: 1.2, // Better line spacing
-                            ),
-                            maxLines: 3, // Increased from 2 to 3 lines
-                            overflow: TextOverflow.ellipsis,
-                          ),
-
-                          SizedBox(
-                            height: ScreenUtils.responsiveValue(
-                              context,
-                              mobile: 10,
-                              tablet: 11,
-                              desktop: 12,
-                            ),
-                          ),
-
-                          // Tap to order hint
-                          Text(
-                            'Tap to order',
-                            style: TextStyle(
-                              fontSize: ScreenUtils.responsiveFontSize(
-                                context,
-                                mobile: 9,
-                                tablet: 10,
-                                desktop: 11,
-                              ),
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onBackground.withOpacity(0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(
-                    width: ScreenUtils.responsiveValue(
-                      context,
-                      mobile: 8,
-                      tablet: 10,
-                      desktop: 12,
-                    ),
-                  ),
-
-                  // Favorite Button - Responsive size
-                  if (onToggleFavorite != null)
-                    Container(
-                      width: ScreenUtils.responsiveValue(
-                        context,
-                        mobile: 40,
-                        tablet: 44,
-                        desktop: 48,
-                      ),
-                      height: ScreenUtils.responsiveValue(
-                        context,
-                        mobile: 40,
-                        tablet: 44,
-                        desktop: 48,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        onPressed: onToggleFavorite,
-                        icon: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
-                          size: ScreenUtils.responsiveValue(
-                            context,
-                            mobile: 20,
-                            tablet: 22,
-                            desktop: 24,
-                          ),
-                          color: isFavorite
-                              ? Colors.red
-                              : Theme.of(context).primaryColor,
-                        ),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  void _handleOrder(BuildContext context) {
+    if (foodItem == null) return;
+
+    final cartViewModel = context.read<CartViewModel>();
+
+    // If only one portion available, add directly
+    if (foodItem!.portions.length == 1) {
+      final portion = foodItem!.portions.first;
+      cartViewModel.addFoodItemToCart(foodItem!, portion);
+      cartViewModel.openCart();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${foodItem!.name} added to cart!'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      // Show portion selection dialog for multiple portions
+      _showPortionSelectionDialog(context, foodItem!);
+    }
+  }
+
+  void _showPortionSelectionDialog(BuildContext context, FoodItem foodItem) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Select Portion Size'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: foodItem.portions.map((portion) {
+            return ListTile(
+              leading: Icon(
+                Icons.restaurant,
+                color: Theme.of(context).primaryColor,
+              ),
+              title: Text(
+                portion.size,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: portion.serves != null
+                  ? Text('Serves ${portion.serves} persons')
+                  : Text(portion.description ?? ''),
+              trailing: Text(
+                'Rs${portion.price.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                final cartViewModel = context.read<CartViewModel>();
+                cartViewModel.addFoodItemToCart(foodItem, portion);
+                cartViewModel.openCart();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${foodItem.name} (${portion.size}) added to cart!',
+                    ),
+                    duration: Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('CANCEL'),
+          ),
+        ],
       ),
     );
   }

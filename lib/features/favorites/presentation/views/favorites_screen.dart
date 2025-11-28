@@ -8,6 +8,8 @@ import '../../../../../core/widgets/food_item_card.dart';
 import '../../../../../core/widgets/search_field.dart';
 import '../view_models/favorites_view_model.dart';
 import 'package:jaan_broast/features/home/domain/models/food_item.dart';
+import 'package:jaan_broast/features/cart/presentation/views/cart_screen.dart';
+import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({Key? key}) : super(key: key);
@@ -43,40 +45,96 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       return _buildLoadingScreen();
     }
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: CustomAppBar(
-        title: 'My Favorites',
-        actions: [
-          // Clear all favorites button
-          Consumer<FavoritesViewModel>(
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.background,
+          appBar: CustomAppBar(
+            title: 'My Favorites',
+            actions: [
+              // Cart Icon with badge
+              Consumer<CartViewModel>(
+                builder: (context, cartViewModel, child) {
+                  return Stack(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.shopping_cart),
+                        onPressed: () {
+                          if (cartViewModel.cartItems.isNotEmpty) {
+                            cartViewModel.openCart();
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Your cart is empty'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      if (cartViewModel.totalItems > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.error,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            constraints: BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              cartViewModel.totalItems.toString(),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+          body: Consumer<FavoritesViewModel>(
             builder: (context, viewModel, child) {
-              return const SizedBox.shrink();
+              if (viewModel.isLoading) {
+                return _buildLoadingState();
+              }
+
+              if (viewModel.error.isNotEmpty && !viewModel.hasData) {
+                return _buildErrorState(viewModel);
+              }
+
+              if (!viewModel.isUserLoggedIn) {
+                return _buildLoginRequiredState();
+              }
+
+              if (!viewModel.hasFavorites) {
+                return _buildEmptyState();
+              }
+
+              return _buildFavoritesContent(viewModel); // Add this return
             },
           ),
-        ],
-      ),
-      body: Consumer<FavoritesViewModel>(
-        builder: (context, viewModel, child) {
-          if (viewModel.isLoading) {
-            return _buildLoadingState();
-          }
+        ),
 
-          if (viewModel.error.isNotEmpty && !viewModel.hasData) {
-            return _buildErrorState(viewModel);
-          }
-
-          if (!viewModel.isUserLoggedIn) {
-            return _buildLoginRequiredState();
-          }
-
-          if (!viewModel.hasFavorites) {
-            return _buildEmptyState();
-          }
-
-          return _buildFavoritesContent(viewModel);
-        },
-      ),
+        // Cart Overlay
+        Consumer<CartViewModel>(
+          builder: (context, cartViewModel, child) {
+            return cartViewModel.isCartOpen
+                ? CartScreen(isOpen: cartViewModel.isCartOpen)
+                : const SizedBox.shrink();
+          },
+        ),
+      ],
     );
   }
 
@@ -286,6 +344,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           onToggleFavorite: () {
             _viewModel.removeFromFavorites(item.id, context);
           },
+          foodItem: item,
         );
       },
     );
