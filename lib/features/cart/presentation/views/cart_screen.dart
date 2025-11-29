@@ -7,6 +7,7 @@ import 'package:jaan_broast/core/utils/screen_utils.dart';
 import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 import 'package:jaan_broast/features/cart/domain/models/cart_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:jaan_broast/core/constants/app_themes.dart';
 
 class CartScreen extends StatefulWidget {
   final bool isOpen;
@@ -187,7 +188,10 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
+  // In cart_screen.dart - Update the _buildHeader method
   Widget _buildHeader(BuildContext context) {
+    final cartViewModel = context.watch<CartViewModel>();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -197,22 +201,129 @@ class _CartScreenState extends State<CartScreen>
           topRight: Radius.circular(24),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Your Order',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Your Order',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Row(
+                children: [
+                  // Single Toggle Button
+                  Container(
+                    constraints: BoxConstraints(
+                      maxWidth: 150,
+                    ), // Prevent overflow
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        // Cycle through order types
+                        if (cartViewModel.orderType == 'delivery') {
+                          cartViewModel.setOrderType('takeaway');
+                        } else if (cartViewModel.orderType == 'takeaway') {
+                          cartViewModel.setOrderType('dinein');
+                        } else {
+                          cartViewModel.setOrderType('delivery');
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Icon based on order type
+                            Icon(
+                              _getOrderTypeIcon(cartViewModel.orderType),
+                              size: 16,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _getOrderTypeText(cartViewModel.orderType),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => context.read<CartViewModel>().closeCart(),
+                    icon: const Icon(Icons.close, size: 24),
+                  ),
+                ],
+              ),
+            ],
           ),
-          IconButton(
-            onPressed: () => context.read<CartViewModel>().closeCart(),
-            icon: const Icon(Icons.close, size: 24),
+          const SizedBox(height: 8),
+          // Order Type Description
+          Text(
+            _getOrderTypeDescription(cartViewModel.orderType),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).disabledColor,
+            ),
           ),
         ],
       ),
     );
+  }
+
+  // Helper methods for order type
+  IconData _getOrderTypeIcon(String orderType) {
+    switch (orderType) {
+      case 'delivery':
+        return Icons.delivery_dining;
+      case 'takeaway':
+        return Icons.takeout_dining;
+      case 'dinein':
+        return Icons.restaurant;
+      default:
+        return Icons.delivery_dining;
+    }
+  }
+
+  String _getOrderTypeText(String orderType) {
+    switch (orderType) {
+      case 'delivery':
+        return 'Delivery';
+      case 'takeaway':
+        return 'Take Away';
+      case 'dinein':
+        return 'Dine In';
+      default:
+        return 'Delivery';
+    }
+  }
+
+  String _getOrderTypeDescription(String orderType) {
+    switch (orderType) {
+      case 'delivery':
+        return 'Your order will be delivered to your address';
+      case 'takeaway':
+        return 'Ready for pickup at our restaurant';
+      case 'dinein':
+        return 'Enjoy your meal at our restaurant';
+      default:
+        return 'Your order will be delivered to your address';
+    }
   }
 
   Widget _buildCartContent(BuildContext context) {
@@ -579,7 +690,7 @@ class _CartScreenState extends State<CartScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'Your Order will be delivered soon.',
+              'Confirm your order & Enjoy your meal!',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
@@ -633,9 +744,9 @@ class _CartScreenState extends State<CartScreen>
                           Navigator.pop(context);
 
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text('Order placed successfully!'),
-                              backgroundColor: Colors.green,
+                              backgroundColor: Theme.of(context).primaryColor,
                               behavior: SnackBarBehavior.floating,
                             ),
                           );

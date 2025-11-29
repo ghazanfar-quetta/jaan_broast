@@ -15,6 +15,7 @@ class Order {
   final String? customerPhone;
   final String? customerEmail; // Add this
   final String? customerNotes; // Add this for delivery instructions
+  final String orderType;
 
   Order({
     required this.id,
@@ -29,6 +30,7 @@ class Order {
     this.customerPhone,
     this.customerEmail, // Add this
     this.customerNotes, // Add this
+    required this.orderType,
   });
 
   Map<String, dynamic> toMap() {
@@ -45,6 +47,7 @@ class Order {
       'customerPhone': customerPhone,
       'customerEmail': customerEmail, // Add this
       'customerNotes': customerNotes, // Add this
+      'orderType': orderType,
       'createdAt': Timestamp.now(),
     };
   }
@@ -67,6 +70,7 @@ class Order {
       customerPhone: map['customerPhone'],
       customerEmail: map['customerEmail'], // Add this
       customerNotes: map['customerNotes'], // Add this
+      orderType: map['orderType'] ?? 'delivery',
     );
   }
 

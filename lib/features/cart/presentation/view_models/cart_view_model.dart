@@ -13,11 +13,13 @@ class CartViewModel with ChangeNotifier {
   final FirestoreCartService _cartService;
   final List<CartItem> _cartItems = [];
   bool _isCartOpen = false;
+  String _orderType = 'delivery'; // Default to delivery
 
   CartViewModel(this._cartService);
 
   List<CartItem> get cartItems => _cartItems;
   bool get isCartOpen => _isCartOpen;
+  String get orderType => _orderType; // Add order type getter
 
   double get totalAmount {
     return _cartItems.fold(0, (total, item) => total + item.totalPrice);
@@ -37,6 +39,14 @@ class CartViewModel with ChangeNotifier {
   void closeCart() {
     _isCartOpen = false;
     notifyListeners();
+  }
+
+  // Add order type setter
+  void setOrderType(String type) {
+    if (type == 'delivery' || type == 'takeaway' || type == 'dinein') {
+      _orderType = type;
+      notifyListeners();
+    }
   }
 
   void addToCart(CartItem item) {
@@ -86,6 +96,7 @@ class CartViewModel with ChangeNotifier {
     notifyListeners();
   }
 
+  // In cart_view_model.dart - Fix the checkout method
   Future<void> checkout({String? specialInstructions}) async {
     if (_cartItems.isEmpty) {
       throw Exception('Cart is empty');
@@ -97,14 +108,15 @@ class CartViewModel with ChangeNotifier {
     }
 
     print(
-      '🔍 Checkout started - User: ${user.uid}, IsAnonymous: ${user.isAnonymous}',
+      '🔍 Checkout started - User: ${user.uid}, IsAnonymous: ${user.isAnonymous}, Order Type: $_orderType',
     );
 
-    // Check if user has mandatory info
-    final hasInfo = await hasMandatoryUserInfo();
-
-    if (!hasInfo) {
-      throw Exception('MISSING_USER_INFO');
+    // Check if user has mandatory info (only for delivery)
+    if (_orderType == 'delivery') {
+      final hasInfo = await hasMandatoryUserInfo();
+      if (!hasInfo) {
+        throw Exception('MISSING_USER_INFO');
+      }
     }
 
     // Fetch user data from Firestore
@@ -121,22 +133,32 @@ class CartViewModel with ChangeNotifier {
     final personalInfo = userData['personalInfo'] as Map<String, dynamic>?;
     final addressData = userData['address'] as Map<String, dynamic>?;
 
+    // Set delivery address only for delivery orders
+    String? deliveryAddressValue;
+    if (_orderType == 'delivery') {
+      deliveryAddressValue = addressData?['fullAddress'] as String?;
+    } else {
+      deliveryAddressValue = null;
+    }
+
     final order = cart_models.Order(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       userId: user.uid,
       items: List.from(_cartItems),
       totalAmount: totalAmount,
       orderDate: DateTime.now(),
-      deliveryAddress: addressData?['fullAddress'],
+      status: 'pending',
+      deliveryAddress: deliveryAddressValue,
       specialInstructions: specialInstructions,
       customerName: personalInfo?['fullName'],
       customerPhone: personalInfo?['phoneNumber'],
       customerEmail: user.email,
       customerNotes: _buildDeliveryNotes(addressData),
+      orderType: _orderType,
     );
 
     print(
-      '🔍 Order created with user data - Name: "${order.customerName}", Phone: "${order.customerPhone}", Address: "${order.deliveryAddress}"',
+      '🔍 Order created - Type: "$_orderType", Name: "${order.customerName}", Phone: "${order.customerPhone}"',
     );
 
     try {

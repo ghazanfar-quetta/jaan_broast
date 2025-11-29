@@ -1,3 +1,4 @@
+// lib/core/widgets/custom_app_bar.dart
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 
