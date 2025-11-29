@@ -946,6 +946,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Your cart is empty'),
+          backgroundColor: Theme.of(context).colorScheme.secondary,
           behavior: SnackBarBehavior.floating,
         ),
       );
