@@ -10,6 +10,7 @@ import '../../features/cart/presentation/view_models/cart_view_model.dart';
 import '../services/firestore_cart_service.dart';
 import '../../features/cart/presentation/view_models/cart_view_model.dart';
 import 'package:jaan_broast/core/services/favorites_manager_service.dart';
+import 'package:jaan_broast/features/orders/presentation/view_models/order_view_model.dart';
 
 class AppProviders extends StatelessWidget {
   final Widget child;
@@ -31,6 +32,9 @@ class AppProviders extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) => CartViewModel(FirestoreCartService()),
+        ),
+        ChangeNotifierProvider<OrderViewModel>(
+          create: (context) => OrderViewModel(),
         ),
       ],
       child: child,

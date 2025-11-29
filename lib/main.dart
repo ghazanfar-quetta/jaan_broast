@@ -19,6 +19,7 @@ import 'features/favorites/presentation/view_models/favorites_view_model.dart';
 import 'core/services/favorites_manager_service.dart';
 import 'package:jaan_broast/core/services/firestore_cart_service.dart';
 import '../../features/cart/presentation/view_models/cart_view_model.dart';
+import 'features/orders/presentation/view_models/order_view_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +65,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) => CartViewModel(FirestoreCartService()),
+        ),
+        ChangeNotifierProvider<OrderViewModel>(
+          create: (context) => OrderViewModel(),
         ),
       ],
       child: MaterialApp(

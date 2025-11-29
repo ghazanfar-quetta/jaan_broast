@@ -16,6 +16,7 @@ import 'package:jaan_broast/features/location/presentation/views/location_setup_
 import 'package:jaan_broast/features/favorites/presentation/views/favorites_screen.dart';
 import 'package:jaan_broast/features/cart/presentation/views/cart_screen.dart';
 import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
+import 'package:jaan_broast/features/orders/presentation/views/order_history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -50,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const BottomNavigationBarItem(
       icon: Icon(Icons.history_outlined),
       activeIcon: Icon(Icons.history),
-      label: 'Order History',
+      label: 'Orders',
     ),
     const BottomNavigationBarItem(
       icon: Icon(Icons.settings_outlined),
@@ -249,8 +250,11 @@ class _HomeScreenState extends State<HomeScreen> {
         return _buildHomeContent();
       case 1:
         return const FavoritesScreen();
+      case 2:
+        return const OrderHistoryScreen(); // Add Order History at index 2
+      case 3:
       default:
-        return _buildPlaceholderScreen();
+        return _buildPlaceholderScreen(); // Settings remains placeholder
     }
   }
 
@@ -273,8 +277,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPlaceholderScreen() {
     final List<String> screenTitles = [
       'Favorites',
-      'Order History',
-      'Settings',
+      'Orders', // Index 2
+      'Settings', // Index 3
     ];
 
     // Get the correct icon data for the current tab
@@ -284,12 +288,9 @@ class _HomeScreenState extends State<HomeScreen> {
         iconData = Icons.favorite_outline;
         break;
       case 2:
-        iconData = Icons.replay_outlined;
+        iconData = Icons.history_outlined; // Orders icon
         break;
       case 3:
-        iconData = Icons.history_outlined;
-        break;
-      case 4:
         iconData = Icons.settings_outlined;
         break;
       default:
@@ -303,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Icon(
             iconData,
             size: 64,
-            color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
+            color: Theme.of(context).primaryColor.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -311,9 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
           const SizedBox(height: 8),
@@ -321,9 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'Coming Soon',
             style: TextStyle(
               fontSize: 16,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.5),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
             ),
           ),
         ],
