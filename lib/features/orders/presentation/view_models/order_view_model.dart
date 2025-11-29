@@ -98,7 +98,7 @@ class OrderViewModel with ChangeNotifier {
 
   // Check if order can be cancelled (only pending orders)
   bool canCancelOrder(OrderHistory order) {
-    return order.status == OrderStatus.pending;
+    return order.status == OrderStatus.live;
   }
 
   // Cancel order with confirmation

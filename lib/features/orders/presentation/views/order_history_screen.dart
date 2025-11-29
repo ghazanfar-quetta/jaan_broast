@@ -17,10 +17,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   late TabController _tabController;
 
   final List<OrderStatus> _tabs = [
-    OrderStatus.pending, // Live
+    OrderStatus.live, // Live
     OrderStatus.confirmed, // Confirmed
-    OrderStatus.outForDelivery, // In Process
-    OrderStatus.delivered, // Completed
+    OrderStatus.inProcess, // In Process
+    OrderStatus.completed, // Completed
   ];
 
   @override

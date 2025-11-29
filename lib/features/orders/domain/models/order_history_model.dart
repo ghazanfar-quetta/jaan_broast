@@ -119,10 +119,10 @@ enum OrderType {
 }
 
 enum OrderStatus {
-  pending('pending', 'Live'),
+  live('live', 'Live'),
   confirmed('confirmed', 'Confirmed'),
-  outForDelivery('out_for_delivery', 'In Process'),
-  delivered('delivered', 'Completed'),
+  inProcess('in_process', 'In Process'),
+  completed('completed', 'Completed'),
   cancelled('cancelled', 'Cancelled');
 
   final String value;
@@ -132,30 +132,30 @@ enum OrderStatus {
 
   static OrderStatus fromString(String status) {
     switch (status) {
-      case 'pending':
-        return OrderStatus.pending;
+      case 'live':
+        return OrderStatus.live;
       case 'confirmed':
         return OrderStatus.confirmed;
-      case 'out_for_delivery':
-        return OrderStatus.outForDelivery;
-      case 'delivered':
-        return OrderStatus.delivered;
+      case 'in_process':
+        return OrderStatus.inProcess;
+      case 'completed':
+        return OrderStatus.completed;
       case 'cancelled':
         return OrderStatus.cancelled;
       default:
-        return OrderStatus.pending;
+        return OrderStatus.live; // Default to live if unknown
     }
   }
 
   Color getStatusColor(BuildContext context) {
     switch (this) {
-      case OrderStatus.pending:
+      case OrderStatus.live:
         return Colors.orange;
       case OrderStatus.confirmed:
         return Colors.blue;
-      case OrderStatus.outForDelivery:
+      case OrderStatus.inProcess:
         return Colors.purple;
-      case OrderStatus.delivered:
+      case OrderStatus.completed:
         return Colors.green;
       case OrderStatus.cancelled:
         return Colors.red;

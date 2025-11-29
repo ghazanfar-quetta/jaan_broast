@@ -8,16 +8,12 @@ class FirestoreOrderService {
     return _firestore
         .collection('orders')
         .where('userId', isEqualTo: userId)
-        .where(
-          'status',
-          isNotEqualTo: 'cancelled',
-        ) // Exclude cancelled orders from main stream
-        .orderBy('status') // Sort by status for consistent ordering
-        .orderBy('orderDate', descending: true) // Then by date
+        .orderBy('orderDate', descending: true)
         .snapshots()
         .map((snapshot) {
           return snapshot.docs
               .map((doc) => OrderHistory.fromMap(doc.data()))
+              .where((order) => order.status != OrderStatus.cancelled)
               .toList();
         });
   }
