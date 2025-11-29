@@ -682,9 +682,9 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(
             height: ScreenUtils.responsiveValue(
               context,
-              mobile: 16,
-              tablet: 20,
-              desktop: 24,
+              mobile: 8,
+              tablet: 10,
+              desktop: 12,
             ),
           ),
 
@@ -864,9 +864,9 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(
             height: ScreenUtils.responsiveValue(
               context,
-              mobile: 12,
-              tablet: 16,
-              desktop: 20,
+              mobile: 8,
+              tablet: 10,
+              desktop: 12,
             ),
           ),
         GridView.builder(
