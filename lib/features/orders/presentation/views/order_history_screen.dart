@@ -220,7 +220,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Order Header (existing code)
+            // Order Header - SIMPLIFIED
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -236,27 +236,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
+                      // REMOVED: Time display and delivery address
                       Text(
-                        '${order.formattedDate} • ${order.formattedTime}',
+                        order.formattedDate, // Only show date, no time
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(
                             context,
                           ).colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
-                      // Order Type and Delivery Info
-                      if (order.deliveryInfo != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          order.deliveryInfo!,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.6),
-                              ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -287,10 +275,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
               ],
             ),
             const SizedBox(height: 16),
-            // Order Items Preview (existing code)
+            // Order Items Preview
             _buildOrderItemsPreview(order),
             const SizedBox(height: 16),
-            // Order Footer (existing code)
+            // Order Footer
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -309,7 +297,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                 ),
               ],
             ),
-            // Action Buttons (NEW - for cancellation)
+            // Action Buttons
             _buildActionButtons(order),
           ],
         ),
