@@ -17,6 +17,7 @@ import 'package:jaan_broast/features/favorites/presentation/views/favorites_scre
 import 'package:jaan_broast/features/cart/presentation/views/cart_screen.dart';
 import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 import 'package:jaan_broast/features/orders/presentation/views/order_history_screen.dart';
+import 'package:jaan_broast/features/settings/presentation/views/settings_screen.dart'; // ADD THIS IMPORT
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -275,11 +276,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPlaceholderScreen() {
-    final List<String> screenTitles = [
-      'Favorites',
-      'Orders', // Index 2
-      'Settings', // Index 3
-    ];
+    final List<String> screenTitles = ['Favorites', 'Orders', 'Settings'];
+
+    // For Settings tab (index 3), return the actual SettingsScreen
+    if (_currentIndex == 3) {
+      return const SettingsScreen(); // ADD THIS IMPORT AT THE TOP
+    }
 
     // Get the correct icon data for the current tab
     final IconData iconData;

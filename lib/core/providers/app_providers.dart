@@ -1,3 +1,4 @@
+// lib/core/providers/app_providers.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../features/auth/presentation/view_models/auth_view_model.dart';
@@ -11,6 +12,7 @@ import '../services/firestore_cart_service.dart';
 import '../../features/cart/presentation/view_models/cart_view_model.dart';
 import 'package:jaan_broast/core/services/favorites_manager_service.dart';
 import 'package:jaan_broast/features/orders/presentation/view_models/order_view_model.dart';
+import '../../features/settings/presentation/view_models/settings_view_model.dart';
 
 class AppProviders extends StatelessWidget {
   final Widget child;
@@ -36,6 +38,7 @@ class AppProviders extends StatelessWidget {
         ChangeNotifierProvider<OrderViewModel>(
           create: (context) => OrderViewModel(),
         ),
+        ChangeNotifierProvider(create: (context) => SettingsViewModel()),
       ],
       child: child,
     );

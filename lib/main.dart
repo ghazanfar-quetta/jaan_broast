@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,15 +9,15 @@ import 'features/auth/presentation/views/sign_up_screen.dart';
 import 'features/splash/presentation/views/splash_screen.dart';
 import 'features/home/presentation/views/home_screen.dart';
 import 'features/home/presentation/view_models/home_view_model.dart';
-import 'features/location/presentation/view_models/location_view_model.dart'; // Add this import
+import 'features/location/presentation/view_models/location_view_model.dart';
+import 'features/settings/presentation/view_models/settings_view_model.dart'; // ADD THIS IMPORT
 import 'core/services/local_storage_service.dart';
 import 'core/services/permission_service.dart';
-import 'package:jaan_broast/routes.dart';
 import 'core/constants/app_themes.dart';
 import 'features/favorites/presentation/view_models/favorites_view_model.dart';
 import 'core/services/favorites_manager_service.dart';
 import 'package:jaan_broast/core/services/firestore_cart_service.dart';
-import '../../features/cart/presentation/view_models/cart_view_model.dart';
+import 'features/cart/presentation/view_models/cart_view_model.dart';
 import 'features/orders/presentation/view_models/order_view_model.dart';
 
 void main() async {
@@ -55,34 +54,39 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => OnboardingViewModel()),
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
-        ChangeNotifierProvider(
-          create: (_) => LocationViewModel(),
-        ), // Add this line
+        ChangeNotifierProvider(create: (_) => LocationViewModel()),
         ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
         ChangeNotifierProvider(create: (_) => FavoritesManagerService()),
         ChangeNotifierProvider<CartViewModel>(
           create: (context) => CartViewModel(FirestoreCartService()),
         ),
-        ChangeNotifierProvider(
-          create: (context) => CartViewModel(FirestoreCartService()),
-        ),
+        // REMOVED DUPLICATE CartViewModel provider
         ChangeNotifierProvider<OrderViewModel>(
           create: (context) => OrderViewModel(),
         ),
+        ChangeNotifierProvider(
+          create: (_) => SettingsViewModel(),
+        ), // ADD THIS LINE
       ],
-      child: MaterialApp(
-        title: 'Jaan Broast',
-        theme: AppThemes.lightTheme, // Use our custom orange theme
-        darkTheme: AppThemes.darkTheme, // Use our custom dark orange theme
-        themeMode: ThemeMode.system, // Follow system theme
-        initialRoute: '/splash',
-        routes: {
-          '/splash': (context) => const SplashScreen(),
-          '/onboarding': (context) => const OnboardingScreen(),
-          '/auth': (context) => const SignUpScreen(),
-          '/home': (context) => const HomeScreen(),
+      child: Consumer<SettingsViewModel>(
+        builder: (context, settingsViewModel, child) {
+          return MaterialApp(
+            title: 'Jaan Broast',
+            theme: AppThemes.lightTheme, // Use our custom orange theme
+            darkTheme: AppThemes.darkTheme, // Use our custom dark orange theme
+            themeMode: settingsViewModel.isDarkMode
+                ? ThemeMode.dark
+                : ThemeMode.light, // USE SETTINGS VIEWMODEL
+            initialRoute: '/splash',
+            routes: {
+              '/splash': (context) => const SplashScreen(),
+              '/onboarding': (context) => const OnboardingScreen(),
+              '/auth': (context) => const SignUpScreen(),
+              '/home': (context) => const HomeScreen(),
+            },
+            debugShowCheckedModeBanner: false,
+          );
         },
-        debugShowCheckedModeBanner: false,
       ),
     );
   }
