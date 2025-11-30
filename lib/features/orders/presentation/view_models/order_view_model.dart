@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // Add this import for context.read
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:jaan_broast/features/orders/domain/models/order_history_model.dart';
+import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
+import 'package:jaan_broast/features/cart/domain/models/cart_item.dart';
 import 'package:jaan_broast/core/services/firestore_order_service.dart';
 
 class OrderViewModel with ChangeNotifier {
@@ -73,32 +77,14 @@ class OrderViewModel with ChangeNotifier {
     }
   }
 
-  Future<void> cancelOrder(String orderId) async {
-    try {
-      await _orderService.cancelOrder(orderId);
-      // Stream will automatically update the UI
-    } catch (e) {
-      throw Exception('Failed to cancel order: $e');
-    }
-  }
-
-  List<OrderHistory> getOrdersByStatus(OrderStatus status) {
-    return _orders.where((order) => order.status == status).toList();
-  }
-
-  bool hasOrdersInStatus(OrderStatus status) {
-    return _orders.any((order) => order.status == status);
-  }
-
-  // Clean up subscription
-  void dispose() {
-    _ordersSubscription?.cancel();
-    super.dispose();
-  }
-
-  // Check if order can be cancelled (only pending orders)
+  // Check if order can be cancelled (only live orders)
   bool canCancelOrder(OrderHistory order) {
     return order.status == OrderStatus.live;
+  }
+
+  // Check if order can be re-ordered (only completed orders)
+  bool canReorderOrder(OrderHistory order) {
+    return order.status == OrderStatus.completed;
   }
 
   // Cancel order with confirmation
@@ -111,10 +97,51 @@ class OrderViewModel with ChangeNotifier {
     }
   }
 
+  // Re-order functionality - adds all items from completed order to cart
+  // Re-order functionality - adds all items from completed order to cart
+  Future<void> reorderItems(OrderHistory order, BuildContext context) async {
+    try {
+      final cartViewModel = context.read<CartViewModel>();
+
+      // Add each item from the order to cart
+      for (var item in order.items) {
+        final cartItem = CartItem(
+          id: '${DateTime.now().millisecondsSinceEpoch}_${item.foodItemId}',
+          foodItemId: item.foodItemId,
+          name: item.name,
+          description: item.description,
+          imageUrl: item.imageUrl,
+          selectedSize: item.selectedSize,
+          price: item.price,
+          quantity: item.quantity,
+          specialInstructions: item.specialInstructions,
+        );
+        cartViewModel.addToCart(cartItem);
+      }
+    } catch (e) {
+      throw Exception('Failed to reorder items: $e');
+    }
+  }
+
+  List<OrderHistory> getOrdersByStatus(OrderStatus status) {
+    return _orders.where((order) => order.status == status).toList();
+  }
+
+  bool hasOrdersInStatus(OrderStatus status) {
+    return _orders.any((order) => order.status == status);
+  }
+
   // Get cancelled orders separately (for future use if needed)
   List<OrderHistory> get cancelledOrders {
     return _orders
         .where((order) => order.status == OrderStatus.cancelled)
         .toList();
+  }
+
+  // Clean up subscription - FIXED: call super.dispose()
+  @override
+  void dispose() {
+    _ordersSubscription?.cancel();
+    super.dispose(); // Add this line
   }
 }

@@ -4,6 +4,7 @@ import 'package:jaan_broast/core/widgets/custom_app_bar.dart';
 import 'package:jaan_broast/core/utils/screen_utils.dart';
 import 'package:jaan_broast/features/orders/domain/models/order_history_model.dart';
 import 'package:jaan_broast/features/orders/presentation/view_models/order_view_model.dart';
+import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({Key? key}) : super(key: key);
@@ -459,29 +460,88 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
 
   Widget _buildActionButtons(OrderHistory order) {
     final orderViewModel = context.read<OrderViewModel>();
+    final canCancel = orderViewModel.canCancelOrder(order);
+    final canReorder = orderViewModel.canReorderOrder(order);
 
-    if (orderViewModel.canCancelOrder(order)) {
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () => _showCancelConfirmationDialog(context, order),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.error,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+    // If no actions available, return empty container
+    if (!canCancel && !canReorder) {
+      return const SizedBox();
+    }
+
+    return Column(
+      children: [
+        if (canCancel) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _showCancelConfirmationDialog(context, order),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Cancel Order',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
             ),
           ),
-          child: const Text(
-            'Cancel Order',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          const SizedBox(height: 8),
+        ],
+        if (canReorder) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _reorderItems(context, order),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Re-Order',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ),
           ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _reorderItems(BuildContext context, OrderHistory order) async {
+    final orderViewModel = context.read<OrderViewModel>();
+
+    try {
+      await orderViewModel.reorderItems(order, context);
+      // No snackbar - just navigate to cart
+      _navigateToCart(context);
+    } catch (e) {
+      // Only show error message if re-order fails
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to reorder: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
+  }
 
-    return const SizedBox();
+  void _navigateToCart(BuildContext context) {
+    // Navigate to cart screen - adjust this based on your app's navigation
+    final cartViewModel = context.read<CartViewModel>();
+    cartViewModel.openCart();
+
+    // If you need actual navigation, use:
+    // Navigator.push(context, MaterialPageRoute(builder: (context) => CartScreen()));
   }
 
   void _showCancelConfirmationDialog(BuildContext context, OrderHistory order) {
