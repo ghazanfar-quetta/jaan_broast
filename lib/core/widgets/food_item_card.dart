@@ -62,74 +62,111 @@ class FoodItemCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: IconButton(
-                    onPressed: onToggleFavorite,
-                    icon: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: isFavorite
-                          ? Theme.of(context).colorScheme.error
-                          : Colors.white,
-                      size: 20,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black.withOpacity(0.5),
-                      padding: const EdgeInsets.all(4),
-                    ),
-                  ),
-                ),
               ],
             ),
 
             // Content Section
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(5),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     // Food Name
                     Text(
                       name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-
+                    const Spacer(),
                     // Price
                     Text(
                       portions.length <= 1
-                          ? 'Rs${basePrice.toStringAsFixed(2)}'
-                          : 'From Rs${basePrice.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          ? 'Rs. ${basePrice.toStringAsFixed(0)}'
+                          : 'From Rs. ${basePrice.toStringAsFixed(0)}',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: Theme.of(context).primaryColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
 
-                    // Order Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => _handleOrder(context),
-                        style: ButtonStyles.primaryButton(context).copyWith(
-                          padding: MaterialStateProperty.all(
-                            const EdgeInsets.symmetric(vertical: 8),
+                    // Order Button with Favorite Icon - Primary Color Scheme
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Order Button
+                        SizedBox(
+                          width: 80,
+                          child: ElevatedButton(
+                            onPressed: () => _handleOrder(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 4,
+                              ),
+                              minimumSize: const Size(0, 28),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            child: const Text(
+                              'Order',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
-                        child: const Text(
-                          'Tap to Order',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+
+                        // Round Favorite Icon
+                        GestureDetector(
+                          onTap: onToggleFavorite,
+                          child: Container(
+                            width: 32, // Increased size
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: isFavorite
+                                  ? Theme.of(context)
+                                        .primaryColor // Using primary color
+                                  : Theme.of(
+                                      context,
+                                    ).primaryColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isFavorite
+                                    ? Theme.of(context).primaryColor
+                                    : Theme.of(
+                                        context,
+                                      ).primaryColor.withOpacity(0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 18, // Increased size
+                                color: isFavorite
+                                    ? Colors
+                                          .white // White for filled
+                                    : Theme.of(
+                                        context,
+                                      ).primaryColor, // Primary color for outline
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),

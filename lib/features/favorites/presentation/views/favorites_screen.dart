@@ -140,17 +140,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           child: RefreshIndicator(
             onRefresh: () => _viewModel.refreshFavorites(context),
             color: Theme.of(context).primaryColor,
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: ScreenUtils.responsiveValue(
-                  context,
-                  mobile: 8,
-                  tablet: 8,
-                  desktop: 8,
-                ),
-              ),
-              child: _buildFavoritesGrid(filteredFavorites),
-            ),
+            child: _buildFavoritesGrid(filteredFavorites),
           ),
         ),
       ],
@@ -249,9 +239,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     return GridView.builder(
       padding: ScreenUtils.responsivePadding(
         context,
-        mobile: 5,
-        tablet: 7,
-        desktop: 9,
+        mobile: 16,
+        tablet: 20,
+        desktop: 24,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: ScreenUtils.responsiveValue(
