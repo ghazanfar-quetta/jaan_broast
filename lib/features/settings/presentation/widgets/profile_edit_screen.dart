@@ -1,3 +1,4 @@
+import 'dart:convert'; // ADD THIS FOR base64Encode
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -36,6 +37,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   bool _isSaving = false;
   bool _isUploadingImage = false; // ADD SEPARATE FLAG FOR IMAGE UPLOAD
   String? _profileImageUrl;
+  bool _profilePictureChanged = false;
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
@@ -69,6 +71,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             }
 
             _isLoading = false;
+            _profilePictureChanged = false; // RESET THE FLAG
           });
         } else {
           // Create basic user model from Firebase Auth data
@@ -95,6 +98,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             }
 
             _isLoading = false;
+            _profilePictureChanged = false; // RESET THE FLAG
           });
         }
       }
@@ -102,6 +106,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       print('Error loading user data: $e');
       setState(() {
         _isLoading = false;
+        _profilePictureChanged = false; // RESET THE FLAG
       });
     }
   }
@@ -109,24 +114,16 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   Future<void> _loadLocalProfilePicture() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedImagePath = prefs.getString('local_profile_picture');
+      final savedBase64Image = prefs.getString('profile_picture_base64');
 
-      if (savedImagePath != null) {
-        // Check if the file still exists
-        final file = File(savedImagePath);
-        if (await file.exists()) {
-          setState(() {
-            _profileImageUrl = savedImagePath;
-          });
-          print('✅ Loaded local profile picture: $savedImagePath');
-        } else {
-          // File no longer exists, remove from preferences
-          await prefs.remove('local_profile_picture');
-          print('❌ Local profile picture file no longer exists');
-        }
+      if (savedBase64Image != null && savedBase64Image.isNotEmpty) {
+        setState(() {
+          _profileImageUrl = savedBase64Image;
+        });
+        print('✅ Loaded Base64 profile picture from storage');
       }
     } catch (e) {
-      print('❌ Error loading local profile picture: $e');
+      print('❌ Error loading Base64 profile picture: $e');
     }
   }
 
@@ -141,84 +138,159 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _isUploadingImage = true;
       });
 
-      // Handle permissions based on source
-      bool hasPermission = false;
-
-      if (source == ImageSource.camera) {
-        // For camera, request camera permission
-        final status = await Permission.camera.request();
-        hasPermission = status.isGranted;
-      } else {
-        // For gallery, try multiple permission types
-        try {
-          // First try photos permission (Android 13+)
-          final photosStatus = await Permission.photos.request();
-          if (photosStatus.isGranted) {
-            hasPermission = true;
-          } else {
-            // Fallback to storage permission
-            final storageStatus = await Permission.storage.request();
-            hasPermission = storageStatus.isGranted;
-          }
-        } catch (e) {
-          // Final fallback
-          final storageStatus = await Permission.storage.request();
-          hasPermission = storageStatus.isGranted;
-        }
-      }
+      // Check and request permissions
+      bool hasPermission = await _checkAndRequestPermission(source);
 
       if (!hasPermission) {
         setState(() {
           _isUploadingImage = false;
         });
+
+        // Show more helpful message
+        String permissionType = source == ImageSource.camera
+            ? 'camera'
+            : 'storage';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Permission denied. Please enable ${source == ImageSource.camera ? 'camera' : 'storage'} permissions in app settings.',
+              '$permissionType permission is required to select images. '
+              'Please enable it in your device settings.',
             ),
             backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
           ),
         );
         return;
       }
 
-      final XFile? image = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 80,
-        maxWidth: 512,
-        maxHeight: 512,
-      );
+      // Pick image with minimal settings for Base64
+      final XFile? image = await _imagePicker
+          .pickImage(
+            source: source,
+            imageQuality: 50, // Low quality for smaller Base64
+            maxWidth: 250, // Small dimensions
+            maxHeight: 250,
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              print('Image picker timeout');
+              return null;
+            },
+          );
 
       if (image != null) {
-        // Use local file path
-        setState(() {
-          _profileImageUrl = image.path;
-          _isUploadingImage = false;
-        });
+        try {
+          // Convert image to Base64 string
+          final bytes = await image.readAsBytes();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Profile image selected!'),
-            backgroundColor: Theme.of(context).primaryColor,
-          ),
-        );
+          // Check file size (max 500KB for SharedPreferences)
+          if (bytes.length > 500 * 1024) {
+            // Image too large, compress more
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                  'Image too large. Please select a smaller image.',
+                ),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+
+          final base64Image = base64Encode(bytes);
+
+          // Save Base64 string to SharedPreferences
+          await _saveProfilePictureAsBase64(base64Image);
+
+          setState(() {
+            _profileImageUrl = base64Image; // Store Base64 string
+            _isUploadingImage = false;
+            _profilePictureChanged = true; // MARK AS CHANGED
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Profile image saved!'),
+              backgroundColor: Theme.of(context).primaryColor,
+            ),
+          );
+        } catch (e) {
+          print('Error processing image: $e');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error processing image: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       } else {
         // User canceled image selection
-        setState(() {
-          _isUploadingImage = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Image selection cancelled'),
+            backgroundColor: Colors.grey,
+          ),
+        );
       }
     } catch (e) {
       print('Error picking image: $e');
-      setState(() {
-        _isUploadingImage = false;
-      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error selecting image: $e'),
+          content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      setState(() {
+        _isUploadingImage = false;
+      });
+    }
+  }
+
+  Future<bool> _checkAndRequestPermission(ImageSource source) async {
+    try {
+      if (source == ImageSource.camera) {
+        // Check camera permission
+        var status = await Permission.camera.status;
+        if (status.isDenied) {
+          status = await Permission.camera.request();
+        }
+        return status.isGranted;
+      } else {
+        // For gallery, try multiple permission types
+
+        // First try photos permission (Android 13+)
+        var photosStatus = await Permission.photos.status;
+        if (photosStatus.isDenied || photosStatus.isRestricted) {
+          photosStatus = await Permission.photos.request();
+        }
+
+        if (photosStatus.isGranted) {
+          return true;
+        }
+
+        // Fallback to storage permission (older Android)
+        var storageStatus = await Permission.storage.status;
+        if (storageStatus.isDenied || storageStatus.isRestricted) {
+          storageStatus = await Permission.storage.request();
+        }
+
+        return storageStatus.isGranted;
+      }
+    } catch (e) {
+      print('Permission check error: $e');
+      return false;
+    }
+  }
+
+  Future<void> _saveProfilePictureAsBase64(String base64Image) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profile_picture_base64', base64Image);
+      print('✅ Profile picture saved as Base64');
+    } catch (e) {
+      print('❌ Error saving profile picture as Base64: $e');
     }
   }
 
@@ -499,9 +571,23 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   bool get _hasChanges {
-    return _nameController.text.trim() != (_userModel?.displayName ?? '') ||
-        _phoneController.text.trim() != (_userModel?.phoneNumber ?? '') ||
-        _profileImageUrl != _userModel?.photoUrl;
+    // Check if name changed
+    final nameChanged =
+        _nameController.text.trim() != (_userModel?.displayName ?? '');
+
+    // Check if phone changed
+    final phoneChanged =
+        _phoneController.text.trim() != (_userModel?.phoneNumber ?? '');
+
+    // Check if profile picture changed (using the flag)
+    final pictureChanged = _profilePictureChanged;
+
+    print('📊 Change Detection:');
+    print('   Name changed: $nameChanged');
+    print('   Phone changed: $phoneChanged');
+    print('   Profile picture changed: $pictureChanged');
+
+    return nameChanged || phoneChanged || pictureChanged;
   }
 
   @override
@@ -739,64 +825,72 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   Widget _buildProfileImage() {
-    if (_profileImageUrl == null) {
-      return Container();
+    if (_profileImageUrl == null || _profileImageUrl!.isEmpty) {
+      return _buildDefaultProfileIcon();
     }
 
-    // Check if it's a network URL (starts with http) or local file path
-    if (_profileImageUrl!.startsWith('http')) {
+    // Check if it's likely Base64
+    bool isLikelyBase64(String str) {
+      if (str.length < 100) return false;
+      if (str.startsWith('/9j/') ||
+          str.startsWith('iVBORw') ||
+          str.startsWith('R0lGOD')) {
+        return true;
+      }
+      final validBase64Regex = RegExp(r'^[A-Za-z0-9+/]+={0,2}$');
+      return validBase64Regex.hasMatch(str);
+    }
+
+    final isBase64 = isLikelyBase64(_profileImageUrl!);
+
+    if (isBase64) {
+      try {
+        return Image.memory(
+          base64Decode(_profileImageUrl!),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildDefaultProfileIcon();
+          },
+        );
+      } catch (e) {
+        return _buildDefaultProfileIcon();
+      }
+    } else if (_profileImageUrl!.startsWith('http')) {
       return Image.network(
         _profileImageUrl!,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                  : null,
-            ),
-          );
-        },
         errorBuilder: (context, error, stackTrace) {
-          print('❌ Error loading network image: $error');
-          return Icon(
-            Icons.person,
-            size: ScreenUtils.responsiveValue(
-              context,
-              mobile: 50,
-              tablet: 60,
-              desktop: 70,
-            ),
-            color: Theme.of(context).primaryColor,
-          );
+          return _buildDefaultProfileIcon();
         },
       );
     } else {
-      // It's a local file path
       return Image.file(
         File(_profileImageUrl!),
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
         errorBuilder: (context, error, stackTrace) {
-          print('❌ Error loading local image: $error');
-          return Icon(
-            Icons.person,
-            size: ScreenUtils.responsiveValue(
-              context,
-              mobile: 50,
-              tablet: 60,
-              desktop: 70,
-            ),
-            color: Theme.of(context).primaryColor,
-          );
+          return _buildDefaultProfileIcon();
         },
       );
     }
+  }
+
+  Widget _buildDefaultProfileIcon() {
+    return Icon(
+      Icons.person,
+      size: ScreenUtils.responsiveValue(
+        context,
+        mobile: 50,
+        tablet: 60,
+        desktop: 70,
+      ),
+      color: Theme.of(context).primaryColor,
+    );
   }
 
   Widget _buildFormFields() {

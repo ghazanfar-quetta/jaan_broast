@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -92,23 +94,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<String?> _loadLocalProfilePicture() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedImagePath = prefs.getString('local_profile_picture');
+      final savedBase64Image = prefs.getString('profile_picture_base64');
 
-      if (savedImagePath != null) {
-        // Check if the file still exists
-        final file = File(savedImagePath);
-        if (await file.exists()) {
-          print('✅ Loaded local profile picture in Settings: $savedImagePath');
-          return savedImagePath;
-        } else {
-          // File no longer exists, remove from preferences
-          await prefs.remove('local_profile_picture');
-          print('❌ Local profile picture file no longer exists');
-        }
+      if (savedBase64Image != null && savedBase64Image.isNotEmpty) {
+        print('✅ Loaded Base64 profile picture in Settings');
+        print('📊 Base64 string length: ${savedBase64Image.length}');
+        print(
+          '📊 First 50 chars: ${savedBase64Image.substring(0, min(50, savedBase64Image.length))}...',
+        );
+        return savedBase64Image;
+      } else {
+        print('❌ No Base64 image found in SharedPreferences');
       }
       return null;
     } catch (e) {
-      print('❌ Error loading local profile picture: $e');
+      print('❌ Error loading Base64 profile picture: $e');
       return null;
     }
   }
@@ -213,6 +213,7 @@ class _SettingsContent extends StatelessWidget {
       child: Column(
         children: [
           // Profile Picture
+          // Profile Picture
           Container(
             width: ScreenUtils.responsiveValue(
               context,
@@ -234,18 +235,9 @@ class _SettingsContent extends StatelessWidget {
                 width: 2,
               ),
             ),
-            child: profileImageUrl != null
+            child: profileImageUrl != null && profileImageUrl!.isNotEmpty
                 ? ClipOval(child: _buildProfileImage(context, profileImageUrl!))
-                : Icon(
-                    Icons.person,
-                    size: ScreenUtils.responsiveValue(
-                      context,
-                      mobile: 40,
-                      tablet: 50,
-                      desktop: 60,
-                    ),
-                    color: Theme.of(context).primaryColor,
-                  ),
+                : _buildDefaultProfileIcon(context),
           ),
           const SizedBox(height: AppConstants.paddingMedium),
 
@@ -276,47 +268,115 @@ class _SettingsContent extends StatelessWidget {
   }
 
   Widget _buildProfileImage(BuildContext context, String imageUrl) {
-    // Check if it's a network URL (starts with http) or local file path
-    if (imageUrl.startsWith('http')) {
+    // DEBUG: Print what we're receiving
+    print(
+      '🔍 Building profile image with: ${imageUrl.substring(0, min(30, imageUrl.length))}...',
+    );
+    print('🔍 Image URL starts with /: ${imageUrl.startsWith('/')}');
+    print('🔍 Image URL starts with http: ${imageUrl.startsWith('http')}');
+    print('🔍 Image URL length: ${imageUrl.length}');
+
+    // BETTER Base64 detection: Check if it's likely Base64
+    bool isLikelyBase64(String str) {
+      // Base64 strings are typically long and contain specific character sets
+      if (str.length < 100)
+        return false; // Too short for meaningful Base64 image
+
+      // Check for common Base64 patterns
+      // JPEG Base64 often starts with "/9j/" (which is confusing our detection!)
+      if (str.startsWith('/9j/') ||
+          str.startsWith('iVBORw') ||
+          str.startsWith('R0lGOD')) {
+        return true;
+      }
+
+      // Check if string contains only valid Base64 chars
+      final validBase64Regex = RegExp(r'^[A-Za-z0-9+/]+={0,2}$');
+      return validBase64Regex.hasMatch(str);
+    }
+
+    final isBase64 = isLikelyBase64(imageUrl);
+    print('🔍 Is likely Base64: $isBase64');
+
+    if (isBase64) {
+      print('🔄 Attempting to decode Base64 image...');
+      try {
+        // Handle the "/9j/" prefix correctly - it's valid Base64 for JPEG
+        final imageBytes = base64Decode(imageUrl);
+        print('✅ Base64 decoded successfully, bytes: ${imageBytes.length}');
+
+        return Image.memory(
+          imageBytes,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (context, error, stackTrace) {
+            print('❌ Error displaying Base64 image: $error');
+            return _buildDefaultProfileIcon(context);
+          },
+        );
+      } catch (e) {
+        print('❌ Base64 decode error: $e');
+        return _buildDefaultProfileIcon(context);
+      }
+    }
+    // Check if it's a network URL (starts with http/https)
+    else if (imageUrl.startsWith('http')) {
+      print('🔄 Loading network image...');
       return Image.network(
         imageUrl,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (context, error, stackTrace) {
-          return Icon(
-            Icons.person,
-            size: ScreenUtils.responsiveValue(
-              context,
-              mobile: 40,
-              tablet: 50,
-              desktop: 60,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                  : null,
             ),
-            color: Theme.of(context).primaryColor,
           );
         },
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ Error loading network image: $error');
+          return _buildDefaultProfileIcon(context);
+        },
       );
-    } else {
-      // It's a local file path
+    }
+    // Check if it's a local file path (starts with /)
+    else if (imageUrl.startsWith('/')) {
+      print('🔄 Loading local file image...');
       return Image.file(
         File(imageUrl),
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
         errorBuilder: (context, error, stackTrace) {
-          return Icon(
-            Icons.person,
-            size: ScreenUtils.responsiveValue(
-              context,
-              mobile: 40,
-              tablet: 50,
-              desktop: 60,
-            ),
-            color: Theme.of(context).primaryColor,
-          );
+          print('❌ Error loading local image: $error');
+          return _buildDefaultProfileIcon(context);
         },
       );
     }
+    // Default icon
+    else {
+      print('ℹ️ Using default profile icon');
+      return _buildDefaultProfileIcon(context);
+    }
+  }
+
+  Widget _buildDefaultProfileIcon(BuildContext context) {
+    return Icon(
+      Icons.person,
+      size: ScreenUtils.responsiveValue(
+        context,
+        mobile: 40,
+        tablet: 50,
+        desktop: 60,
+      ),
+      color: Theme.of(context).primaryColor,
+    );
   }
 
   Widget _buildSettingsList(BuildContext context) {
