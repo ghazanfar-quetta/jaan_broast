@@ -206,8 +206,8 @@ class _SettingsContent extends StatelessWidget {
       margin: EdgeInsets.all(
         ScreenUtils.responsiveValue(
           context,
-          mobile: AppConstants.paddingMedium.toDouble(),
-          tablet: AppConstants.paddingLarge.toDouble(),
+          mobile: AppConstants.paddingSmall.toDouble(),
+          tablet: AppConstants.paddingMedium.toDouble(),
           desktop: AppConstants.paddingLarge.toDouble(),
         ),
       ),
@@ -248,15 +248,15 @@ class _SettingsContent extends StatelessWidget {
 
           // Circular Name Badge at Bottom Center (50% overlapped)
           Positioned(
-            bottom: -140, // Keep your -140 value
+            bottom: -90, // Keep your -140 value
             left: 0,
             right: 0,
             child: Column(
               children: [
                 // Circular Badge
                 Container(
-                  width: 140,
-                  height: 140,
+                  width: 130,
+                  height: 130,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white.withOpacity(
@@ -299,9 +299,9 @@ class _SettingsContent extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: ScreenUtils.responsiveFontSize(
                                     context,
-                                    mobile: 16.0,
-                                    tablet: 18.0,
-                                    desktop: 20.0,
+                                    mobile: 14.0,
+                                    tablet: 16.0,
+                                    desktop: 18.0,
                                   ),
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black87,
@@ -314,61 +314,7 @@ class _SettingsContent extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
-                // Edit Profile Button
-                Container(
-                  width: 160,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Theme.of(context).primaryColor,
-                        Theme.of(context).primaryColor.withOpacity(0.8),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.borderRadius,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).primaryColor.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.borderRadius,
-                      ),
-                      onTap: onAccountTap,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 16,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.edit, size: 18, color: Colors.white),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Edit Profile',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -539,7 +485,7 @@ class _SettingsContent extends StatelessWidget {
         ),
       ),
       children: [
-        SizedBox(height: 100),
+        SizedBox(height: 10),
         const SizedBox(height: 60), // Space for the overlapping circle
 
         _buildListTile(
@@ -703,7 +649,7 @@ class _SettingsContent extends StatelessWidget {
         ),
       ),
       child: Text(
-        'App Version: 1.4.0[31]',
+        'App Version: 1.4.1[0]',
         style: TextStyle(
           fontSize: ScreenUtils.responsiveFontSize(
             context,

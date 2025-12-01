@@ -25,16 +25,16 @@ class AppConstants {
   static const int secondaryTextColorDark = 0xFFBBBBBB;
 
   // Font sizes
-  static const double headingSizeLarge = 24.0;
-  static const double headingSizeMedium = 20.0;
-  static const double headingSizeSmall = 18.0;
-  static const double bodyTextSize = 16.0;
-  static const double captionTextSize = 14.0;
+  static const double headingSizeLarge = 20.0;
+  static const double headingSizeMedium = 18.0;
+  static const double headingSizeSmall = 16.0;
+  static const double bodyTextSize = 14.0;
+  static const double captionTextSize = 12.0;
 
   // Spacing
-  static const double paddingSmall = 8.0;
-  static const double paddingMedium = 16.0;
-  static const double paddingLarge = 24.0;
+  static const double paddingSmall = 10.0;
+  static const double paddingMedium = 12.0;
+  static const double paddingLarge = 16.0;
   static const double borderRadius = 12.0;
 
   // Animation
