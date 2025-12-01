@@ -4,19 +4,63 @@ import 'package:geolocator/geolocator.dart';
 
 class PermissionService {
   // Request camera and photos permission for profile picture
+  // Request camera and photos permission for profile picture
   static Future<Map<String, bool>> requestMediaPermissions() async {
-    final cameraStatus = await Permission.camera.request();
-    final photosStatus = await Permission.storage.request();
+    try {
+      // Simple approach - request both camera and storage
+      final cameraStatus = await Permission.camera.request();
+      final storageStatus = await Permission.storage.request();
 
-    return {'camera': cameraStatus.isGranted, 'photos': photosStatus.isGranted};
+      return {
+        'camera': cameraStatus.isGranted,
+        'photos': storageStatus.isGranted,
+      };
+    } catch (e) {
+      print('Error requesting media permissions: $e');
+      // Fallback to basic permissions
+      final cameraStatus = await Permission.camera.status;
+      final storageStatus = await Permission.storage.status;
+
+      return {
+        'camera': cameraStatus.isGranted,
+        'photos': storageStatus.isGranted,
+      };
+    }
   }
 
   // Check if media permissions are granted
   static Future<Map<String, bool>> checkMediaPermissions() async {
-    final cameraStatus = await Permission.camera.status;
-    final photosStatus = await Permission.storage.status;
+    try {
+      // For Android 13+ (API 33+)
+      if (await Permission.mediaLibrary.isRestricted) {
+        final photosStatus = await Permission.mediaLibrary.status;
+        final cameraStatus = await Permission.camera.status;
 
-    return {'camera': cameraStatus.isGranted, 'photos': photosStatus.isGranted};
+        return {
+          'camera': cameraStatus.isGranted,
+          'photos': photosStatus.isGranted,
+        };
+      } else {
+        // For older Android versions
+        final photosStatus = await Permission.storage.status;
+        final cameraStatus = await Permission.camera.status;
+
+        return {
+          'camera': cameraStatus.isGranted,
+          'photos': photosStatus.isGranted,
+        };
+      }
+    } catch (e) {
+      print('Error checking media permissions: $e');
+      // Fallback to basic permissions
+      final photosStatus = await Permission.storage.status;
+      final cameraStatus = await Permission.camera.status;
+
+      return {
+        'camera': cameraStatus.isGranted,
+        'photos': photosStatus.isGranted,
+      };
+    }
   }
 
   // Request location permission

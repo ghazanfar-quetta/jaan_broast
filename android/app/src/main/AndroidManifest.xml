@@ -7,18 +7,27 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
-    <!-- For Android 10 (API 29) and below - use these for media -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="32" />
+    <!-- Storage permissions for all Android versions -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     
-    <!-- For Android 11 (API 30) and above - use this for media -->
+    <!-- For Android 13+ (API 33+) media permissions -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
 
-    <!-- Optional: If you want to use internet for location services -->
+    <!-- Internet permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Add these for permission_handler compatibility -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
 
     <application
         android:label="Jaan Broast"
@@ -26,7 +35,18 @@
         android:allowBackup="true"
         android:supportsRtl="true"
         android:theme="@style/LaunchTheme"
-        android:requestLegacyExternalStorage="true"> <!-- Important for file access on older devices -->
+        android:requestLegacyExternalStorage="true">
+
+        <!-- File Provider for image picking -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <activity
             android:name=".MainActivity"
@@ -36,12 +56,8 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"
-            android:enableOnBackInvokedCallback="true"> <!-- Add this for Android 13+ back gesture -->
+            android:enableOnBackInvokedCallback="true">
 
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
@@ -70,7 +86,6 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-
     </application>
 
     <!-- For PROCESS_TEXT plugin and package visibility -->
@@ -82,8 +97,6 @@
         
         <!-- Optional: If you use Google Sign-In -->
         <package android:name="com.google.android.gms" />
-        
-        <!-- Optional: If you use any other third-party apps -->
     </queries>
 
 </manifest>

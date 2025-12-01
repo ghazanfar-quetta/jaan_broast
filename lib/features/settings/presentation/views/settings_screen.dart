@@ -1,9 +1,13 @@
+import 'dart:io'; // ADD THIS IMPORT FOR File CLASS
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../../core/constants/app_constants.dart';
 import '../../../../../core/utils/screen_utils.dart';
 import '../../../../../core/widgets/custom_app_bar.dart';
 import '../view_models/settings_view_model.dart';
+import '../widgets/profile_edit_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -13,18 +17,110 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String _userName = 'Loading...';
+  String? _profileImageUrl;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          setState(() {
+            _userName =
+                userData?['displayName'] as String? ??
+                user.displayName ??
+                'User';
+            _profileImageUrl =
+                userData?['photoUrl'] as String? ?? user.photoURL;
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _userName = user.displayName ?? 'User';
+            _profileImageUrl = user.photoURL;
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _userName = 'Guest User';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      setState(() {
+        _userName = 'Error loading name';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _handleAccountTap() {
+    print('My Account tapped');
+    // Navigate to profile editing screen with callback
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => ProfileEditScreen(
+              onProfileUpdated: (newImageUrl) {
+                // Update the local state with new profile picture
+                setState(() {
+                  _profileImageUrl = newImageUrl;
+                });
+              },
+            ),
+          ),
+        )
+        .then((_) {
+          // Reload user data when returning from profile edit
+          _loadUserData();
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: CustomAppBar(title: 'Settings', showBackButton: false),
-      body: const _SettingsContent(),
+      body: _SettingsContent(
+        userName: _userName,
+        profileImageUrl: _profileImageUrl,
+        isLoading: _isLoading,
+        onAccountTap: _handleAccountTap, // Pass the handler
+      ),
     );
   }
 }
 
 class _SettingsContent extends StatelessWidget {
-  const _SettingsContent({Key? key}) : super(key: key);
+  final String userName;
+  final String? profileImageUrl;
+  final bool isLoading;
+  final VoidCallback onAccountTap;
+
+  const _SettingsContent({
+    Key? key,
+    required this.userName,
+    required this.profileImageUrl,
+    required this.isLoading,
+    required this.onAccountTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -96,57 +192,47 @@ class _SettingsContent extends StatelessWidget {
                 width: 2,
               ),
             ),
-            child: Icon(
-              Icons.person,
-              size: ScreenUtils.responsiveValue(
-                context,
-                mobile: 40,
-                tablet: 50,
-                desktop: 60,
-              ),
-              color: Theme.of(context).primaryColor,
-            ),
+            child: profileImageUrl != null
+                ? ClipOval(
+                    child: _buildProfileImage(
+                      context,
+                      profileImageUrl!,
+                    ), // USE HELPER METHOD
+                  )
+                : Icon(
+                    Icons.person,
+                    size: ScreenUtils.responsiveValue(
+                      context,
+                      mobile: 40,
+                      tablet: 50,
+                      desktop: 60,
+                    ),
+                    color: Theme.of(context).primaryColor,
+                  ),
           ),
           const SizedBox(height: AppConstants.paddingMedium),
 
-          // User Name
-          Text(
-            'Ghazanfar Ali',
-            style: TextStyle(
-              fontSize: ScreenUtils.responsiveFontSize(
-                context,
-                mobile: AppConstants.headingSizeMedium,
-                tablet: AppConstants.headingSizeMedium,
-                desktop: AppConstants.headingSizeLarge,
-              ),
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: AppConstants.paddingSmall),
-
-          // Edit Profile Button
-          TextButton(
-            onPressed: () {
-              // Navigate to edit profile screen
-              print('Edit profile tapped');
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).primaryColor,
-            ),
-            child: Text(
-              'Edit Profile',
-              style: TextStyle(
-                fontSize: ScreenUtils.responsiveFontSize(
-                  context,
-                  mobile: AppConstants.captionTextSize,
-                  tablet: AppConstants.bodyTextSize,
-                  desktop: AppConstants.bodyTextSize,
+          // User Name - Dynamic from Firebase
+          isLoading
+              ? CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).primaryColor,
+                  ),
+                  strokeWidth: 2,
+                )
+              : Text(
+                  userName,
+                  style: TextStyle(
+                    fontSize: ScreenUtils.responsiveFontSize(
+                      context,
+                      mobile: AppConstants.headingSizeMedium,
+                      tablet: AppConstants.headingSizeMedium,
+                      desktop: AppConstants.headingSizeLarge,
+                    ),
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -167,32 +253,32 @@ class _SettingsContent extends StatelessWidget {
           context: context,
           icon: Icons.person_outline,
           title: 'My Account',
-          onTap: () => _handleAccountTap(),
+          onTap: onAccountTap, // Use the passed callback
         ),
         _buildListTile(
           context: context,
           icon: Icons.restaurant_outlined,
           title: 'Restaurant Details',
-          onTap: () => _handleRestaurantDetailsTap(),
+          onTap: _handleRestaurantDetailsTap,
         ),
         _buildListTile(
           context: context,
           icon: Icons.payment_outlined,
           title: 'Payment History',
-          onTap: () => _handlePaymentHistoryTap(),
+          onTap: _handlePaymentHistoryTap,
         ),
         _buildDarkModeTile(context),
         _buildListTile(
           context: context,
           icon: Icons.privacy_tip_outlined,
           title: 'Privacy Policy',
-          onTap: () => _handlePrivacyPolicyTap(),
+          onTap: _handlePrivacyPolicyTap,
         ),
         _buildListTile(
           context: context,
           icon: Icons.help_outline,
           title: 'Help & Support',
-          onTap: () => _handleHelpSupportTap(),
+          onTap: _handleHelpSupportTap,
         ),
         const SizedBox(height: AppConstants.paddingLarge),
         _buildLogoutTile(context),
@@ -334,12 +420,6 @@ class _SettingsContent extends StatelessWidget {
     );
   }
 
-  // Handler methods for different settings options
-  void _handleAccountTap() {
-    print('My Account tapped');
-    // Navigate to account screen
-  }
-
   void _handleRestaurantDetailsTap() {
     print('Restaurant Details tapped');
     // Navigate to restaurant details screen
@@ -401,7 +481,7 @@ class _SettingsContent extends StatelessWidget {
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop(); // Close dialog first
-                await _performLogout(context); // NOW THIS SHOULD WORK
+                await _performLogout(context);
               },
               child: Text(
                 'Log Out',
@@ -419,7 +499,64 @@ class _SettingsContent extends StatelessWidget {
       context,
       listen: false,
     );
-    await settingsViewModel.logout(context); // ADD AWAIT AND MAKE METHOD ASYNC
+    await settingsViewModel.logout(context);
     // The success message and navigation are now handled in the ViewModel
+  }
+
+  Widget _buildProfileImage(BuildContext context, String imageUrl) {
+    // Check if it's a network URL (starts with http) or local file path
+    if (imageUrl.startsWith('http')) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print('Error loading network image: $error');
+          return Icon(
+            Icons.person,
+            size: ScreenUtils.responsiveValue(
+              context,
+              mobile: 40,
+              tablet: 50,
+              desktop: 60,
+            ),
+            color: Theme.of(context).primaryColor,
+          );
+        },
+      );
+    } else {
+      // It's a local file path
+      return Image.file(
+        File(imageUrl),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) {
+          print('Error loading local image: $error');
+          return Icon(
+            Icons.person,
+            size: ScreenUtils.responsiveValue(
+              context,
+              mobile: 40,
+              tablet: 50,
+              desktop: 60,
+            ),
+            color: Theme.of(context).primaryColor,
+          );
+        },
+      );
+    }
   }
 }
