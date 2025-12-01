@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart'; // ADD THIS
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:io'; // FOR File CLASS
-
+import 'dart:io';
 import '../../../../../core/constants/app_constants.dart';
 import '../../../../../core/utils/screen_utils.dart';
 import '../../../../../core/widgets/custom_app_bar.dart';
 import '../../../../../core/constants/button_styles.dart';
-import '../../../../../core/services/permission_service.dart';
 import '../../../auth/domain/models/user_model.dart';
-import '../../../auth/presentation/view_models/auth_view_model.dart';
-import 'change_password_screen.dart'; // ADD THIS IMPORT
+import 'change_password_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   final Function(String?)? onProfileUpdated;
@@ -62,7 +59,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             _nameController.text = _userModel?.displayName ?? '';
             _emailController.text = _userModel?.email ?? user.email ?? '';
             _phoneController.text = _userModel?.phoneNumber ?? '';
-            _profileImageUrl = _userModel?.photoUrl;
+
+            // First try to load locally saved profile picture
+            _loadLocalProfilePicture();
+
+            // If no local picture, try Firebase URL
+            if (_profileImageUrl == null) {
+              _profileImageUrl = _userModel?.photoUrl ?? user.photoURL;
+            }
+
             _isLoading = false;
           });
         } else {
@@ -80,7 +85,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             _nameController.text = user.displayName ?? '';
             _emailController.text = user.email ?? '';
             _phoneController.text = user.phoneNumber ?? '';
-            _profileImageUrl = user.photoURL;
+
+            // First try to load locally saved profile picture
+            _loadLocalProfilePicture();
+
+            // If no local picture, try Firebase URL
+            if (_profileImageUrl == null) {
+              _profileImageUrl = user.photoURL;
+            }
+
             _isLoading = false;
           });
         }
@@ -90,6 +103,30 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadLocalProfilePicture() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedImagePath = prefs.getString('local_profile_picture');
+
+      if (savedImagePath != null) {
+        // Check if the file still exists
+        final file = File(savedImagePath);
+        if (await file.exists()) {
+          setState(() {
+            _profileImageUrl = savedImagePath;
+          });
+          print('✅ Loaded local profile picture: $savedImagePath');
+        } else {
+          // File no longer exists, remove from preferences
+          await prefs.remove('local_profile_picture');
+          print('❌ Local profile picture file no longer exists');
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading local profile picture: $e');
     }
   }
 
@@ -354,17 +391,22 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         }
 
         // Update user data in Firestore
-        // Note: We're only saving text data to Firestore (free)
         final updatedUser = _userModel!.copyWith(
           displayName: _nameController.text.trim(),
           phoneNumber: _phoneController.text.trim(),
-          // We don't save the local image path as it won't work across devices
+          // We're NOT saving the local image path as it won't persist
         );
 
         await _firestore
             .collection('users')
             .doc(user.uid)
             .set(updatedUser.toFirestore(), SetOptions(merge: true));
+
+        // Save profile picture to local storage for this session
+        if (_profileImageUrl != null && !_profileImageUrl!.startsWith('http')) {
+          // Save the local image path to device storage for this session
+          await _saveProfilePictureLocally(_profileImageUrl!);
+        }
 
         // CALL THE CALLBACK TO UPDATE SETTINGS SCREEN
         if (widget.onProfileUpdated != null) {
@@ -393,6 +435,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       setState(() {
         _isSaving = false;
       });
+    }
+  }
+
+  Future<void> _saveProfilePictureLocally(String imagePath) async {
+    try {
+      // Use shared_preferences to save the image path
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('local_profile_picture', imagePath);
+      print('✅ Profile picture saved locally: $imagePath');
+    } catch (e) {
+      print('❌ Error saving profile picture locally: $e');
     }
   }
 

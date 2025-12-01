@@ -1,13 +1,16 @@
-import 'dart:io'; // ADD THIS IMPORT FOR File CLASS
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
 import '../../../../../core/constants/app_constants.dart';
 import '../../../../../core/utils/screen_utils.dart';
 import '../../../../../core/widgets/custom_app_bar.dart';
 import '../view_models/settings_view_model.dart';
 import '../widgets/profile_edit_screen.dart';
+import '../widgets/privacy_policy_screen.dart';
+import '../widgets/change_password_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -40,19 +43,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (userDoc.exists) {
           final userData = userDoc.data();
+
+          // Try to load locally saved profile picture first
+          String? localImagePath = await _loadLocalProfilePicture();
+
           setState(() {
             _userName =
                 userData?['displayName'] as String? ??
                 user.displayName ??
                 'User';
+
+            // Use local picture if available, otherwise use Firebase URL
             _profileImageUrl =
-                userData?['photoUrl'] as String? ?? user.photoURL;
+                localImagePath ??
+                userData?['photoUrl'] as String? ??
+                user.photoURL;
+
             _isLoading = false;
           });
         } else {
+          // Try to load locally saved profile picture first
+          String? localImagePath = await _loadLocalProfilePicture();
+
           setState(() {
             _userName = user.displayName ?? 'User';
-            _profileImageUrl = user.photoURL;
+
+            // Use local picture if available, otherwise use Firebase URL
+            _profileImageUrl = localImagePath ?? user.photoURL;
+
             _isLoading = false;
           });
         }
@@ -68,6 +86,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _userName = 'Error loading name';
         _isLoading = false;
       });
+    }
+  }
+
+  Future<String?> _loadLocalProfilePicture() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedImagePath = prefs.getString('local_profile_picture');
+
+      if (savedImagePath != null) {
+        // Check if the file still exists
+        final file = File(savedImagePath);
+        if (await file.exists()) {
+          print('✅ Loaded local profile picture in Settings: $savedImagePath');
+          return savedImagePath;
+        } else {
+          // File no longer exists, remove from preferences
+          await prefs.remove('local_profile_picture');
+          print('❌ Local profile picture file no longer exists');
+        }
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error loading local profile picture: $e');
+      return null;
     }
   }
 
@@ -102,7 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         userName: _userName,
         profileImageUrl: _profileImageUrl,
         isLoading: _isLoading,
-        onAccountTap: _handleAccountTap, // Pass the handler
+        onAccountTap: _handleAccountTap,
       ),
     );
   }
@@ -193,12 +235,7 @@ class _SettingsContent extends StatelessWidget {
               ),
             ),
             child: profileImageUrl != null
-                ? ClipOval(
-                    child: _buildProfileImage(
-                      context,
-                      profileImageUrl!,
-                    ), // USE HELPER METHOD
-                  )
+                ? ClipOval(child: _buildProfileImage(context, profileImageUrl!))
                 : Icon(
                     Icons.person,
                     size: ScreenUtils.responsiveValue(
@@ -238,6 +275,50 @@ class _SettingsContent extends StatelessWidget {
     );
   }
 
+  Widget _buildProfileImage(BuildContext context, String imageUrl) {
+    // Check if it's a network URL (starts with http) or local file path
+    if (imageUrl.startsWith('http')) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(
+            Icons.person,
+            size: ScreenUtils.responsiveValue(
+              context,
+              mobile: 40,
+              tablet: 50,
+              desktop: 60,
+            ),
+            color: Theme.of(context).primaryColor,
+          );
+        },
+      );
+    } else {
+      // It's a local file path
+      return Image.file(
+        File(imageUrl),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(
+            Icons.person,
+            size: ScreenUtils.responsiveValue(
+              context,
+              mobile: 40,
+              tablet: 50,
+              desktop: 60,
+            ),
+            color: Theme.of(context).primaryColor,
+          );
+        },
+      );
+    }
+  }
+
   Widget _buildSettingsList(BuildContext context) {
     return ListView(
       padding: EdgeInsets.symmetric(
@@ -253,32 +334,41 @@ class _SettingsContent extends StatelessWidget {
           context: context,
           icon: Icons.person_outline,
           title: 'My Account',
-          onTap: onAccountTap, // Use the passed callback
+          onTap: onAccountTap,
         ),
         _buildListTile(
           context: context,
           icon: Icons.restaurant_outlined,
           title: 'Restaurant Details',
-          onTap: _handleRestaurantDetailsTap,
+          onTap: () => _handleRestaurantDetailsTap(),
         ),
         _buildListTile(
           context: context,
           icon: Icons.payment_outlined,
           title: 'Payment History',
-          onTap: _handlePaymentHistoryTap,
+          onTap: () => _handlePaymentHistoryTap(),
         ),
+
+        // DARK MODE TILE - THIS WAS MISSING
         _buildDarkModeTile(context),
+
         _buildListTile(
           context: context,
           icon: Icons.privacy_tip_outlined,
           title: 'Privacy Policy',
-          onTap: _handlePrivacyPolicyTap,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const PrivacyPolicyScreen(),
+              ),
+            );
+          },
         ),
         _buildListTile(
           context: context,
           icon: Icons.help_outline,
           title: 'Help & Support',
-          onTap: _handleHelpSupportTap,
+          onTap: () => _handleHelpSupportTap(),
         ),
         const SizedBox(height: AppConstants.paddingLarge),
         _buildLogoutTile(context),
@@ -286,6 +376,7 @@ class _SettingsContent extends StatelessWidget {
     );
   }
 
+  // DARK MODE TILE METHOD - MAKE SURE THIS EXISTS
   Widget _buildDarkModeTile(BuildContext context) {
     return Consumer<SettingsViewModel>(
       builder: (context, settingsViewModel, child) {
@@ -430,11 +521,6 @@ class _SettingsContent extends StatelessWidget {
     // Navigate to payment history screen
   }
 
-  void _handlePrivacyPolicyTap() {
-    print('Privacy Policy tapped');
-    // Navigate to privacy policy screen
-  }
-
   void _handleHelpSupportTap() {
     print('Help & Support tapped');
     // Navigate to help & support screen
@@ -501,62 +587,5 @@ class _SettingsContent extends StatelessWidget {
     );
     await settingsViewModel.logout(context);
     // The success message and navigation are now handled in the ViewModel
-  }
-
-  Widget _buildProfileImage(BuildContext context, String imageUrl) {
-    // Check if it's a network URL (starts with http) or local file path
-    if (imageUrl.startsWith('http')) {
-      return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                  : null,
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          print('Error loading network image: $error');
-          return Icon(
-            Icons.person,
-            size: ScreenUtils.responsiveValue(
-              context,
-              mobile: 40,
-              tablet: 50,
-              desktop: 60,
-            ),
-            color: Theme.of(context).primaryColor,
-          );
-        },
-      );
-    } else {
-      // It's a local file path
-      return Image.file(
-        File(imageUrl),
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) {
-          print('Error loading local image: $error');
-          return Icon(
-            Icons.person,
-            size: ScreenUtils.responsiveValue(
-              context,
-              mobile: 40,
-              tablet: 50,
-              desktop: 60,
-            ),
-            color: Theme.of(context).primaryColor,
-          );
-        },
-      );
-    }
   }
 }
