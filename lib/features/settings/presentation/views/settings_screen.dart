@@ -1,3 +1,4 @@
+// live/features/settings/presentation/views/settings_screen.dart
 import 'dart:math';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import '../widgets/profile_edit_screen.dart';
 import '../widgets/privacy_policy_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/help_support_screen.dart';
+import '../widgets/restaurant_details_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -154,6 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         isLoading: _isLoading,
         onAccountTap: _handleAccountTap,
         onHelpSupportTap: _handleHelpSupportTap,
+        parentContext: context,
       ),
     );
   }
@@ -165,6 +168,7 @@ class _SettingsContent extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onAccountTap;
   final VoidCallback onHelpSupportTap;
+  final BuildContext parentContext;
 
   const _SettingsContent({
     Key? key,
@@ -173,6 +177,7 @@ class _SettingsContent extends StatelessWidget {
     required this.isLoading,
     required this.onAccountTap,
     required this.onHelpSupportTap,
+    required this.parentContext,
   }) : super(key: key);
 
   @override
@@ -497,7 +502,7 @@ class _SettingsContent extends StatelessWidget {
           context: context,
           icon: Icons.restaurant_outlined,
           title: 'Restaurant Details',
-          onTap: () => _handleRestaurantDetailsTap(),
+          onTap: () => _handleRestaurantDetailsTap(parentContext),
         ),
 
         // DARK MODE TILE
@@ -662,9 +667,12 @@ class _SettingsContent extends StatelessWidget {
     );
   }
 
-  void _handleRestaurantDetailsTap() {
+  void _handleRestaurantDetailsTap(BuildContext context) {
     print('Restaurant Details tapped');
     // Navigate to restaurant details screen
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const RestaurantDetailsScreen()),
+    );
   }
 
   void _handlePaymentHistoryTap() {
