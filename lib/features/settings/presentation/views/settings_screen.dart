@@ -193,90 +193,223 @@ class _SettingsContent extends StatelessWidget {
   }
 
   Widget _buildUserProfileHeader(BuildContext context) {
+    final headerHeight = ScreenUtils.responsiveValue(
+      context,
+      mobile: 220.0,
+      tablet: 240.0,
+      desktop: 260.0,
+    );
+
     return Container(
       width: double.infinity,
+      height: headerHeight,
       margin: EdgeInsets.all(
         ScreenUtils.responsiveValue(
           context,
-          mobile: AppConstants.paddingMedium,
-          tablet: AppConstants.paddingLarge,
-          desktop: AppConstants.paddingLarge,
-        ),
-      ),
-      padding: EdgeInsets.all(
-        ScreenUtils.responsiveValue(
-          context,
-          mobile: AppConstants.paddingMedium,
-          tablet: AppConstants.paddingLarge,
-          desktop: AppConstants.paddingLarge,
+          mobile: AppConstants.paddingMedium.toDouble(),
+          tablet: AppConstants.paddingLarge.toDouble(),
+          desktop: AppConstants.paddingLarge.toDouble(),
         ),
       ),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Column(
+      child: Stack(
+        clipBehavior: Clip.none, // IMPORTANT: This allows overflow
         children: [
-          // Profile Picture
-          // Profile Picture
+          // Background Image - Full container
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+            child: _buildProfileBackground(context),
+          ),
+
+          // Gradient overlay for better text visibility
           Container(
-            width: ScreenUtils.responsiveValue(
-              context,
-              mobile: 80,
-              tablet: 100,
-              desktop: 120,
-            ),
-            height: ScreenUtils.responsiveValue(
-              context,
-              mobile: 80,
-              tablet: 100,
-              desktop: 120,
-            ),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
-              border: Border.all(
-                color: Theme.of(context).primaryColor,
-                width: 2,
+              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.3),
+                  Colors.black.withOpacity(0.1),
+                  Colors.transparent,
+                ],
               ),
             ),
-            child: profileImageUrl != null && profileImageUrl!.isNotEmpty
-                ? ClipOval(child: _buildProfileImage(context, profileImageUrl!))
-                : _buildDefaultProfileIcon(context),
           ),
-          const SizedBox(height: AppConstants.paddingMedium),
 
-          // User Name - Dynamic from Firebase
-          isLoading
-              ? CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).primaryColor,
-                  ),
-                  strokeWidth: 2,
-                )
-              : Text(
-                  userName,
-                  style: TextStyle(
-                    fontSize: ScreenUtils.responsiveFontSize(
-                      context,
-                      mobile: AppConstants.headingSizeMedium,
-                      tablet: AppConstants.headingSizeMedium,
-                      desktop: AppConstants.headingSizeLarge,
+          // Circular Name Badge at Bottom Center (50% overlapped)
+          Positioned(
+            bottom: -140, // Keep your -140 value
+            left: 0,
+            right: 0,
+            child: Column(
+              children: [
+                // Circular Badge
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(
+                      0.95,
+                    ), // Fixed: withOpacity instead of withValues
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 20,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: Theme.of(context).primaryColor,
+                      width: 4,
                     ),
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 8),
+
+                      // User Name
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: isLoading
+                            ? SizedBox(
+                                height: 20,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Theme.of(context).primaryColor,
+                                    ),
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                _getDisplayName(userName),
+                                style: TextStyle(
+                                  fontSize: ScreenUtils.responsiveFontSize(
+                                    context,
+                                    mobile: 16.0,
+                                    tablet: 18.0,
+                                    desktop: 20.0,
+                                  ),
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                      ),
+                    ],
                   ),
                 ),
+
+                const SizedBox(height: 16),
+
+                // Edit Profile Button
+                Container(
+                  width: 160,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(context).primaryColor,
+                        Theme.of(context).primaryColor.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.borderRadius,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
+                      ),
+                      onTap: onAccountTap,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 16,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.edit, size: 18, color: Colors.white),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Edit Profile',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  String _getDisplayName(String name) {
+    // Truncate name if it's too long
+    if (name.length > 15) {
+      return '${name.substring(0, 12)}...';
+    }
+    return name;
+  }
+
+  Widget _buildProfileBackground(BuildContext context) {
+    if (profileImageUrl != null && profileImageUrl!.isNotEmpty) {
+      return _buildProfileImage(context, profileImageUrl!);
+    } else {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).primaryColor,
+              Theme.of(context).primaryColor.withOpacity(0.7),
+              Theme.of(context).primaryColor.withOpacity(0.3),
+            ],
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.person,
+            size: 80,
+            color: Colors.white.withOpacity(0.7),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildProfileImage(BuildContext context, String imageUrl) {
@@ -324,12 +457,12 @@ class _SettingsContent extends StatelessWidget {
           height: double.infinity,
           errorBuilder: (context, error, stackTrace) {
             print('❌ Error displaying Base64 image: $error');
-            return _buildDefaultProfileIcon(context);
+            return _buildDefaultBackground(context);
           },
         );
       } catch (e) {
         print('❌ Base64 decode error: $e');
-        return _buildDefaultProfileIcon(context);
+        return _buildDefaultBackground(context);
       }
     }
     // Check if it's a network URL (starts with http/https)
@@ -348,12 +481,13 @@ class _SettingsContent extends StatelessWidget {
                   ? loadingProgress.cumulativeBytesLoaded /
                         loadingProgress.expectedTotalBytes!
                   : null,
+              color: Colors.white,
             ),
           );
         },
         errorBuilder: (context, error, stackTrace) {
           print('❌ Error loading network image: $error');
-          return _buildDefaultProfileIcon(context);
+          return _buildDefaultBackground(context);
         },
       );
     }
@@ -367,27 +501,30 @@ class _SettingsContent extends StatelessWidget {
         height: double.infinity,
         errorBuilder: (context, error, stackTrace) {
           print('❌ Error loading local image: $error');
-          return _buildDefaultProfileIcon(context);
+          return _buildDefaultBackground(context);
         },
       );
     }
-    // Default icon
+    // Default background
     else {
-      print('ℹ️ Using default profile icon');
-      return _buildDefaultProfileIcon(context);
+      print('ℹ️ Using default background');
+      return _buildDefaultBackground(context);
     }
   }
 
-  Widget _buildDefaultProfileIcon(BuildContext context) {
-    return Icon(
-      Icons.person,
-      size: ScreenUtils.responsiveValue(
-        context,
-        mobile: 40,
-        tablet: 50,
-        desktop: 60,
+  Widget _buildDefaultBackground(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Theme.of(context).primaryColor,
+            Theme.of(context).primaryColor.withOpacity(0.7),
+            Theme.of(context).primaryColor.withOpacity(0.3),
+          ],
+        ),
       ),
-      color: Theme.of(context).primaryColor,
     );
   }
 
@@ -396,12 +533,15 @@ class _SettingsContent extends StatelessWidget {
       padding: EdgeInsets.symmetric(
         horizontal: ScreenUtils.responsiveValue(
           context,
-          mobile: AppConstants.paddingMedium,
-          tablet: AppConstants.paddingLarge,
-          desktop: AppConstants.paddingLarge,
+          mobile: AppConstants.paddingMedium.toDouble(),
+          tablet: AppConstants.paddingLarge.toDouble(),
+          desktop: AppConstants.paddingLarge.toDouble(),
         ),
       ),
       children: [
+        SizedBox(height: 100),
+        const SizedBox(height: 60), // Space for the overlapping circle
+
         _buildListTile(
           context: context,
           icon: Icons.person_outline,
@@ -414,14 +554,8 @@ class _SettingsContent extends StatelessWidget {
           title: 'Restaurant Details',
           onTap: () => _handleRestaurantDetailsTap(),
         ),
-        _buildListTile(
-          context: context,
-          icon: Icons.payment_outlined,
-          title: 'Payment History',
-          onTap: () => _handlePaymentHistoryTap(),
-        ),
 
-        // DARK MODE TILE - THIS WAS MISSING
+        // DARK MODE TILE
         _buildDarkModeTile(context),
 
         _buildListTile(
@@ -448,7 +582,7 @@ class _SettingsContent extends StatelessWidget {
     );
   }
 
-  // DARK MODE TILE METHOD - MAKE SURE THIS EXISTS
+  // DARK MODE TILE METHOD
   Widget _buildDarkModeTile(BuildContext context) {
     return Consumer<SettingsViewModel>(
       builder: (context, settingsViewModel, child) {
@@ -458,9 +592,9 @@ class _SettingsContent extends StatelessWidget {
             color: Theme.of(context).primaryColor,
             size: ScreenUtils.responsiveValue(
               context,
-              mobile: 22,
-              tablet: 24,
-              desktop: 26,
+              mobile: 22.0,
+              tablet: 24.0,
+              desktop: 26.0,
             ),
           ),
           title: Text(
@@ -468,9 +602,9 @@ class _SettingsContent extends StatelessWidget {
             style: TextStyle(
               fontSize: ScreenUtils.responsiveFontSize(
                 context,
-                mobile: AppConstants.bodyTextSize,
-                tablet: AppConstants.bodyTextSize,
-                desktop: AppConstants.bodyTextSize,
+                mobile: AppConstants.bodyTextSize.toDouble(),
+                tablet: AppConstants.bodyTextSize.toDouble(),
+                desktop: AppConstants.bodyTextSize.toDouble(),
               ),
               fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.onSurface,
@@ -498,9 +632,9 @@ class _SettingsContent extends StatelessWidget {
         color: Theme.of(context).colorScheme.error,
         size: ScreenUtils.responsiveValue(
           context,
-          mobile: 22,
-          tablet: 24,
-          desktop: 26,
+          mobile: 22.0,
+          tablet: 24.0,
+          desktop: 26.0,
         ),
       ),
       title: Text(
@@ -508,9 +642,9 @@ class _SettingsContent extends StatelessWidget {
         style: TextStyle(
           fontSize: ScreenUtils.responsiveFontSize(
             context,
-            mobile: AppConstants.bodyTextSize,
-            tablet: AppConstants.bodyTextSize,
-            desktop: AppConstants.bodyTextSize,
+            mobile: AppConstants.bodyTextSize.toDouble(),
+            tablet: AppConstants.bodyTextSize.toDouble(),
+            desktop: AppConstants.bodyTextSize.toDouble(),
           ),
           fontWeight: FontWeight.w500,
           color: Theme.of(context).colorScheme.error,
@@ -532,9 +666,9 @@ class _SettingsContent extends StatelessWidget {
         color: Theme.of(context).primaryColor,
         size: ScreenUtils.responsiveValue(
           context,
-          mobile: 22,
-          tablet: 24,
-          desktop: 26,
+          mobile: 22.0,
+          tablet: 24.0,
+          desktop: 26.0,
         ),
       ),
       title: Text(
@@ -542,9 +676,9 @@ class _SettingsContent extends StatelessWidget {
         style: TextStyle(
           fontSize: ScreenUtils.responsiveFontSize(
             context,
-            mobile: AppConstants.bodyTextSize,
-            tablet: AppConstants.bodyTextSize,
-            desktop: AppConstants.bodyTextSize,
+            mobile: AppConstants.bodyTextSize.toDouble(),
+            tablet: AppConstants.bodyTextSize.toDouble(),
+            desktop: AppConstants.bodyTextSize.toDouble(),
           ),
           fontWeight: FontWeight.w500,
           color: Theme.of(context).colorScheme.onSurface,
@@ -563,9 +697,9 @@ class _SettingsContent extends StatelessWidget {
       padding: EdgeInsets.all(
         ScreenUtils.responsiveValue(
           context,
-          mobile: AppConstants.paddingMedium,
-          tablet: AppConstants.paddingLarge,
-          desktop: AppConstants.paddingLarge,
+          mobile: AppConstants.paddingMedium.toDouble(),
+          tablet: AppConstants.paddingLarge.toDouble(),
+          desktop: AppConstants.paddingLarge.toDouble(),
         ),
       ),
       child: Text(
@@ -573,9 +707,9 @@ class _SettingsContent extends StatelessWidget {
         style: TextStyle(
           fontSize: ScreenUtils.responsiveFontSize(
             context,
-            mobile: AppConstants.captionTextSize,
-            tablet: AppConstants.bodyTextSize,
-            desktop: AppConstants.bodyTextSize,
+            mobile: AppConstants.captionTextSize.toDouble(),
+            tablet: AppConstants.bodyTextSize.toDouble(),
+            desktop: AppConstants.bodyTextSize.toDouble(),
           ),
           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
         ),
@@ -603,9 +737,9 @@ class _SettingsContent extends StatelessWidget {
             style: TextStyle(
               fontSize: ScreenUtils.responsiveFontSize(
                 context,
-                mobile: AppConstants.headingSizeMedium,
-                tablet: AppConstants.headingSizeMedium,
-                desktop: AppConstants.headingSizeMedium,
+                mobile: AppConstants.headingSizeMedium.toDouble(),
+                tablet: AppConstants.headingSizeMedium.toDouble(),
+                desktop: AppConstants.headingSizeMedium.toDouble(),
               ),
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.onSurface,
@@ -616,9 +750,9 @@ class _SettingsContent extends StatelessWidget {
             style: TextStyle(
               fontSize: ScreenUtils.responsiveFontSize(
                 context,
-                mobile: AppConstants.bodyTextSize,
-                tablet: AppConstants.bodyTextSize,
-                desktop: AppConstants.bodyTextSize,
+                mobile: AppConstants.bodyTextSize.toDouble(),
+                tablet: AppConstants.bodyTextSize.toDouble(),
+                desktop: AppConstants.bodyTextSize.toDouble(),
               ),
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
