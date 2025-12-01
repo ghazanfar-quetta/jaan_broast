@@ -13,6 +13,7 @@ import '../widgets/profile_edit_screen.dart';
 import '../widgets/privacy_policy_screen.dart';
 import '../widgets/change_password_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/help_support_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -32,6 +33,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadUserData();
+  }
+
+  void _handleHelpSupportTap() {
+    print('Help & Support tapped');
+    // Navigate to help & support screen
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
   }
 
   Future<void> _loadUserData() async {
@@ -145,6 +154,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         profileImageUrl: _profileImageUrl,
         isLoading: _isLoading,
         onAccountTap: _handleAccountTap,
+        onHelpSupportTap: _handleHelpSupportTap,
       ),
     );
   }
@@ -155,6 +165,7 @@ class _SettingsContent extends StatelessWidget {
   final String? profileImageUrl;
   final bool isLoading;
   final VoidCallback onAccountTap;
+  final VoidCallback onHelpSupportTap;
 
   const _SettingsContent({
     Key? key,
@@ -162,6 +173,7 @@ class _SettingsContent extends StatelessWidget {
     required this.profileImageUrl,
     required this.isLoading,
     required this.onAccountTap,
+    required this.onHelpSupportTap,
   }) : super(key: key);
 
   @override
@@ -428,7 +440,7 @@ class _SettingsContent extends StatelessWidget {
           context: context,
           icon: Icons.help_outline,
           title: 'Help & Support',
-          onTap: () => _handleHelpSupportTap(),
+          onTap: onHelpSupportTap,
         ),
         const SizedBox(height: AppConstants.paddingLarge),
         _buildLogoutTile(context),
@@ -579,11 +591,6 @@ class _SettingsContent extends StatelessWidget {
   void _handlePaymentHistoryTap() {
     print('Payment History tapped');
     // Navigate to payment history screen
-  }
-
-  void _handleHelpSupportTap() {
-    print('Help & Support tapped');
-    // Navigate to help & support screen
   }
 
   void _showLogoutConfirmation(BuildContext context) {
