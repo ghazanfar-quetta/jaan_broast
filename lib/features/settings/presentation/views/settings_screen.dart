@@ -11,7 +11,6 @@ import '../../../../../core/widgets/custom_app_bar.dart';
 import '../view_models/settings_view_model.dart';
 import '../widgets/profile_edit_screen.dart';
 import '../widgets/privacy_policy_screen.dart';
-import '../widgets/change_password_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/help_support_screen.dart';
 
