@@ -1,5 +1,4 @@
 // lib/core/utils/location_flow_manager.dart
-
 import 'package:flutter/material.dart';
 import '../services/permission_service.dart';
 import '../../features/location/presentation/view_models/location_view_model.dart';
@@ -17,6 +16,7 @@ class LocationFlowManager with ChangeNotifier {
   LocationFlowState _currentState = LocationFlowState.initial;
   String _errorMessage = '';
   final LocationViewModel _locationViewModel;
+  bool _hasCompletedFlow = false; // NEW: Track if flow completed
 
   LocationFlowState get currentState => _currentState;
   String get errorMessage => _errorMessage;
@@ -40,7 +40,6 @@ class LocationFlowManager with ChangeNotifier {
       final granted = await PermissionService.requestLocationPermission();
 
       if (!granted) {
-        // Stay on same dialog with a message (no new screen)
         _setError("Location permission is required to use current location");
         _setState(LocationFlowState.initial);
         return;
@@ -59,10 +58,24 @@ class LocationFlowManager with ChangeNotifier {
     _setState(LocationFlowState.gettingLocation);
 
     try {
-      final success = await _locationViewModel.retryAutoLocation();
+      // Use the improved method that ensures saving
+      final success = await _locationViewModel.getCurrentLocationOnce();
 
       if (success) {
-        _setState(LocationFlowState.locationSuccess);
+        // IMPORTANT: Add a small delay to ensure location is saved
+        await Future.delayed(Duration(milliseconds: 500));
+
+        // Verify location was actually saved
+        final isLocationSet = _locationViewModel.isLocationSet;
+        print('📍 FlowManager: Location set? $isLocationSet');
+
+        if (isLocationSet) {
+          _setState(LocationFlowState.locationSuccess);
+          _hasCompletedFlow = true;
+        } else {
+          _setError("Location fetched but not saved properly");
+          _setState(LocationFlowState.locationError);
+        }
       } else {
         _setError("Failed to get current location");
         _setState(LocationFlowState.locationError);
@@ -76,6 +89,7 @@ class LocationFlowManager with ChangeNotifier {
   /// User chooses manual entry
   void chooseManualEntry() {
     _setState(LocationFlowState.manualEntry);
+    _hasCompletedFlow = true;
   }
 
   /// Retry from error
@@ -100,26 +114,6 @@ class LocationFlowManager with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Requests permission if needed, then fetches current location
-  Future<void> requestPermissionAndFetchLocation() async {
-    try {
-      // Check if we already have permission
-      final hasPermission = await PermissionService.checkLocationPermission();
-
-      if (!hasPermission) {
-        final granted = await PermissionService.requestLocationPermission();
-        if (!granted) {
-          _setError(
-            'Location permission is required for current location feature.',
-          );
-          return;
-        }
-      }
-
-      // Now get the location
-      await getCurrentLocation();
-    } catch (e) {
-      _setError('Failed to get location: $e');
-    }
-  }
+  /// Check if flow has been completed
+  bool get hasCompletedFlow => _hasCompletedFlow;
 }

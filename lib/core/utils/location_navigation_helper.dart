@@ -1,7 +1,7 @@
+// lib/core/utils/location_navigation_helper.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import '../services/local_storage_service.dart';
 import '../../features/auth/presentation/view_models/auth_view_model.dart';
 import 'location_flow_dialog.dart';
 
@@ -23,6 +23,10 @@ class LocationNavigationHelper {
         context: context,
         onComplete: () {
           // Mark first login as completed
+          authViewModel.completeFirstLogin();
+        },
+        onManualEntry: () {
+          // User chose manual entry - still mark as completed
           authViewModel.completeFirstLogin();
         },
       );

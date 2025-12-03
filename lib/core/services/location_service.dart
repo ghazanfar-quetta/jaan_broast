@@ -19,9 +19,39 @@ class LocationService {
 
   static Future<Position?> getCurrentLocation() async {
     try {
-      return await PermissionService.handleLocationPermissionFlow();
+      print('📍 LocationService: Getting current location...');
+
+      // First check permission
+      bool hasPermission =
+          await PermissionService.hasProperLocationPermission();
+
+      if (!hasPermission) {
+        print('📍 No permission, requesting...');
+        hasPermission = await PermissionService.requestLocationPermission();
+      }
+
+      if (!hasPermission) {
+        print('❌ Location permission denied');
+        return null;
+      }
+
+      // Get position with timeout
+      final position =
+          await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.best,
+            timeLimit: Duration(seconds: 10),
+          ).timeout(
+            Duration(seconds: 15),
+            onTimeout: () {
+              print('⚠️ Location timeout');
+              return Future.error('Location timeout');
+            },
+          );
+
+      print('📍 Got position: ${position.latitude}, ${position.longitude}');
+      return position;
     } catch (e) {
-      print('LocationService: Error getting location - $e');
+      print('❌ LocationService: Error getting location - $e');
       return null;
     }
   }
