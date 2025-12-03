@@ -19,12 +19,19 @@ import 'core/services/favorites_manager_service.dart';
 import 'package:jaan_broast/core/services/firestore_cart_service.dart';
 import 'features/cart/presentation/view_models/cart_view_model.dart';
 import 'features/orders/presentation/view_models/order_view_model.dart';
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   // Request notification permission on first app launch
   await _requestNotificationPermission();
+
+  // Set portrait mode only
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   runApp(const MyApp());
 }
 
