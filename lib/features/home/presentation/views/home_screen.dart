@@ -215,18 +215,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
-              IconButton(
-                icon: Icon(
-                  Icons.person,
-                  size: ScreenUtils.responsiveValue(
-                    context,
-                    mobile: 22,
-                    tablet: 24,
-                    desktop: 26,
-                  ),
-                ),
-                onPressed: _viewProfile,
-              ),
             ],
           ),
           body: _buildCurrentScreen(),
@@ -950,11 +938,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
-  }
-
-  void _viewProfile() {
-    // Navigate to profile screen
-    print('Open profile screen');
   }
 
   void _changeLocation() {
