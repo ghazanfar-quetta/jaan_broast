@@ -206,7 +206,7 @@ class _SettingsContent extends StatelessWidget {
   Widget _buildUserProfileHeader(BuildContext context) {
     final headerHeight = ScreenUtils.responsiveValue(
       context,
-      mobile: 250.0,
+      mobile: 250.0, // Reduced height since we're not overlapping
       tablet: 270.0,
       desktop: 290.0,
     );
@@ -214,7 +214,6 @@ class _SettingsContent extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: headerHeight,
-
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         boxShadow: [
@@ -224,25 +223,6 @@ class _SettingsContent extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Circular Profile Image - Large and Centered
-          Center(
-            child: Container(
-              width: 250, // Large circle diameter (same as your original)
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: ClipOval(child: _buildProfileBackground(context)),
-            ),
-          ),
-
           // Gradient overlay for better text visibility
           Container(
             decoration: BoxDecoration(
@@ -259,54 +239,96 @@ class _SettingsContent extends StatelessWidget {
             ),
           ),
 
-          // Rectangular Name Badge at Bottom Center (50% overlapped)
-          Positioned(
-            bottom: -50,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                // Gradient Background Box with Username
-                isLoading
-                    ? SizedBox(
-                        width: MediaQuery.of(context).size.width - 32,
-                        height: 100,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).primaryColor,
+          // Row layout for circle photo and username
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Circular Profile Image on LEFT
+                  Container(
+                    width: 220, // Smaller circle for side-by-side layout
+                    height: 220,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(child: _buildProfileBackground(context)),
+                  ),
+
+                  const SizedBox(width: 20), // Spacing between circle and text
+                  // Username on RIGHT (vertically centered)
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        isLoading
+                            ? SizedBox(
+                                height: 24,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Theme.of(context).primaryColor,
+                                    ),
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                _getDisplayName(userName),
+                                style: TextStyle(
+                                  fontSize: ScreenUtils.responsiveFontSize(
+                                    context,
+                                    mobile: 22.0, // Larger font
+                                    tablet: 24.0,
+                                    desktop: 26.0,
+                                  ),
+                                  fontWeight: FontWeight.w700, // Bolder
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onBackground,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.white.withOpacity(0.8),
+                                      blurRadius: 4,
+                                      offset: const Offset(1, 1),
+                                    ),
+                                  ],
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+
+                        const SizedBox(height: 8),
+
+                        // Optional: Add user email or status
+                        Text(
+                          'Account Settings',
+                          style: TextStyle(
+                            fontSize: ScreenUtils.responsiveFontSize(
+                              context,
+                              mobile: 14.0,
+                              tablet: 15.0,
+                              desktop: 16.0,
                             ),
-                            strokeWidth: 2,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onBackground.withOpacity(0.7),
                           ),
                         ),
-                      )
-                    : Text(
-                        _getDisplayName(userName),
-                        style: TextStyle(
-                          fontSize: ScreenUtils.responsiveFontSize(
-                            context,
-                            mobile: 18.0,
-                            tablet: 20.0,
-                            desktop: 22.0,
-                          ),
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onBackground, // Deep orange text
-                          shadows: [
-                            Shadow(
-                              color: Colors.white.withOpacity(0.8),
-                              blurRadius: 4,
-                              offset: const Offset(1, 1),
-                            ),
-                          ],
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                const SizedBox(height: 16),
-              ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -477,8 +499,6 @@ class _SettingsContent extends StatelessWidget {
       ),
       children: [
         SizedBox(height: 10),
-        const SizedBox(height: 60), // Space for the overlapping circle
-
         _buildListTile(
           context: context,
           icon: Icons.person_outline,
