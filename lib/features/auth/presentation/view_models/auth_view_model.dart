@@ -3,15 +3,27 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/services/firebase_auth_service.dart';
 import '../../../../core/services/local_storage_service.dart';
+import '../../../../core/services/user_service.dart';
 
 class AuthViewModel with ChangeNotifier {
   final FirebaseAuthService _authService = FirebaseAuthService();
+  final UserService _userService = UserService();
 
   bool _isLoading = false;
   String _errorMessage = '';
 
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
+
+  Future<void> _createUserDocumentAfterAuth(User user) async {
+    try {
+      await _userService.createOrUpdateUserDocument(user);
+      print('✅ User document created/updated for: ${user.uid}');
+    } catch (e) {
+      print('❌ Error creating user document: $e');
+      // Don't throw - auth succeeded even if document creation failed
+    }
+  }
 
   // Check if this is user's first login
   Future<bool> _isFirstLogin(User user) async {
@@ -50,6 +62,7 @@ class AuthViewModel with ChangeNotifier {
         print(
           '✅ AuthViewModel: Google Sign-In successful, setting logged in state',
         );
+        await _createUserDocumentAfterAuth(user);
         await LocalStorageService.setIsLoggedIn(true);
         _setLoading(false);
         return true;
@@ -111,6 +124,7 @@ class AuthViewModel with ChangeNotifier {
       );
 
       if (user != null) {
+        await _createUserDocumentAfterAuth(user);
         await LocalStorageService.setIsLoggedIn(true);
         _setLoading(false);
         return true;
@@ -136,7 +150,11 @@ class AuthViewModel with ChangeNotifier {
         email: email.trim(),
         password: password.trim(),
       );
-
+      final user = _authService.auth.currentUser;
+      if (user != null) {
+        // ADD THIS - Create user document
+        await _createUserDocumentAfterAuth(user);
+      }
       _errorMessage = '';
       return true;
     } on FirebaseAuthException catch (e) {
@@ -170,6 +188,7 @@ class AuthViewModel with ChangeNotifier {
       final User? user = await _authService.signInAnonymously();
 
       if (user != null) {
+        await _createUserDocumentAfterAuth(user);
         await LocalStorageService.setIsLoggedIn(true);
         _setLoading(false);
         return true;

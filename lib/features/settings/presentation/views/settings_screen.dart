@@ -34,6 +34,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadUserData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settingsViewModel = Provider.of<SettingsViewModel>(
+        context,
+        listen: false,
+      );
+      settingsViewModel.initializeNotificationSettings();
+    });
   }
 
   void _handleHelpSupportTap() {
@@ -262,7 +269,7 @@ class _SettingsContent extends StatelessWidget {
                 // Gradient Background Box with Username
                 isLoading
                     ? SizedBox(
-                        width: 450,
+                        width: MediaQuery.of(context).size.width - 32,
                         height: 100,
                         child: Center(
                           child: CircularProgressIndicator(
@@ -487,7 +494,7 @@ class _SettingsContent extends StatelessWidget {
 
         // DARK MODE TILE
         _buildDarkModeTile(context),
-
+        _buildNotificationTile(context),
         _buildListTile(
           context: context,
           icon: Icons.privacy_tip_outlined,
@@ -549,6 +556,69 @@ class _SettingsContent extends StatelessWidget {
           ),
           onTap: () {
             settingsViewModel.toggleDarkMode(!settingsViewModel.isDarkMode);
+          },
+        );
+      },
+    );
+  }
+
+  // NOTIFICATION TILE METHOD - ADD THIS
+  Widget _buildNotificationTile(BuildContext context) {
+    return Consumer<SettingsViewModel>(
+      builder: (context, settingsViewModel, child) {
+        return ListTile(
+          leading: Icon(
+            settingsViewModel.notificationsEnabled
+                ? Icons.notifications_active
+                : Icons.notifications_off,
+            color: Theme.of(context).primaryColor,
+            size: ScreenUtils.responsiveValue(
+              context,
+              mobile: 22.0,
+              tablet: 24.0,
+              desktop: 26.0,
+            ),
+          ),
+          title: Text(
+            'Notifications',
+            style: TextStyle(
+              fontSize: ScreenUtils.responsiveFontSize(
+                context,
+                mobile: AppConstants.bodyTextSize.toDouble(),
+                tablet: AppConstants.bodyTextSize.toDouble(),
+                desktop: AppConstants.bodyTextSize.toDouble(),
+              ),
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          subtitle: settingsViewModel.notificationsEnabled
+              ? Text(
+                  'Receive order updates and offers',
+                  style: TextStyle(
+                    fontSize: ScreenUtils.responsiveFontSize(
+                      context,
+                      mobile: AppConstants.captionTextSize.toDouble(),
+                      tablet: AppConstants.captionTextSize.toDouble(),
+                      desktop: AppConstants.captionTextSize.toDouble(),
+                    ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                )
+              : null,
+          trailing: Switch(
+            value: settingsViewModel.notificationsEnabled,
+            onChanged: (value) {
+              settingsViewModel.toggleNotifications(value);
+            },
+            activeColor: Theme.of(context).primaryColor,
+          ),
+          onTap: () {
+            settingsViewModel.toggleNotifications(
+              !settingsViewModel.notificationsEnabled,
+            );
           },
         );
       },

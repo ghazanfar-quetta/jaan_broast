@@ -1,3 +1,6 @@
+// lib/features/auth/domain/models/user_model.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class UserModel {
   final String uid;
   final String? email;
@@ -11,6 +14,7 @@ class UserModel {
   final UserDeliveryPreferences? deliveryPreferences;
   final DateTime? createdAt;
   final DateTime? lastSignedIn;
+  final bool notificationsEnabled;
 
   UserModel({
     required this.uid,
@@ -25,10 +29,20 @@ class UserModel {
     this.deliveryPreferences,
     this.createdAt,
     this.lastSignedIn,
+    this.notificationsEnabled = true,
   });
 
   // Convert Firestore document to UserModel
   factory UserModel.fromFirestore(String uid, Map<String, dynamic> data) {
+    // Helper function to convert Firestore Timestamp to DateTime
+    DateTime? _parseTimestamp(dynamic timestamp) {
+      if (timestamp == null) return null;
+      if (timestamp is DateTime) return timestamp;
+      if (timestamp is Timestamp) return timestamp.toDate();
+      if (timestamp is String) return DateTime.tryParse(timestamp);
+      return null;
+    }
+
     return UserModel(
       uid: uid,
       email: data['email'] as String?,
@@ -37,6 +51,7 @@ class UserModel {
       photoUrl: data['photoUrl'] as String?,
       isAnonymous: data['isAnonymous'] as bool? ?? false,
       isEmailVerified: data['isEmailVerified'] as bool? ?? false,
+      notificationsEnabled: data['notificationsEnabled'] as bool? ?? true,
       address: data['address'] != null
           ? UserAddress.fromMap(data['address'] as Map<String, dynamic>)
           : null,
@@ -48,12 +63,8 @@ class UserModel {
               data['deliveryPreferences'] as Map<String, dynamic>,
             )
           : null,
-      createdAt: data['createdAt'] != null
-          ? DateTime.parse(data['createdAt'] as String)
-          : null,
-      lastSignedIn: data['lastSignedIn'] != null
-          ? DateTime.parse(data['lastSignedIn'] as String)
-          : null,
+      createdAt: _parseTimestamp(data['createdAt']),
+      lastSignedIn: _parseTimestamp(data['lastSignedIn']),
     );
   }
 
@@ -66,11 +77,14 @@ class UserModel {
       'photoUrl': photoUrl,
       'isAnonymous': isAnonymous,
       'isEmailVerified': isEmailVerified,
+      'notificationsEnabled': notificationsEnabled,
       'address': address?.toMap(),
       'appData': appData?.toMap(),
       'deliveryPreferences': deliveryPreferences?.toMap(),
-      'createdAt': createdAt?.toIso8601String(),
-      'lastSignedIn': lastSignedIn?.toIso8601String(),
+      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
+      'lastSignedIn': lastSignedIn != null
+          ? Timestamp.fromDate(lastSignedIn!)
+          : null,
     };
   }
 
@@ -81,6 +95,7 @@ class UserModel {
     String? photoUrl,
     UserAddress? address,
     UserDeliveryPreferences? deliveryPreferences,
+    bool? notificationsEnabled,
   }) {
     return UserModel(
       uid: uid,
@@ -90,6 +105,7 @@ class UserModel {
       photoUrl: photoUrl ?? this.photoUrl,
       isAnonymous: isAnonymous,
       isEmailVerified: isEmailVerified,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       address: address ?? this.address,
       appData: appData,
       deliveryPreferences: deliveryPreferences ?? this.deliveryPreferences,
@@ -188,12 +204,14 @@ class UserAppData {
   final bool? isFirstLoginCompleted;
   final String? lastUpdated;
   final bool? locationSetupCompleted;
+  final bool? notificationsEnabled;
 
   UserAppData({
     this.accountCreatedAt,
     this.isFirstLoginCompleted,
     this.lastUpdated,
     this.locationSetupCompleted,
+    this.notificationsEnabled,
   });
 
   factory UserAppData.fromMap(Map<String, dynamic> map) {
@@ -202,6 +220,7 @@ class UserAppData {
       isFirstLoginCompleted: map['isFirstLoginCompleted'] as bool?,
       lastUpdated: map['lastUpdated'] as String?,
       locationSetupCompleted: map['locationSetupCompleted'] as bool?,
+      notificationsEnabled: map['notificationsEnabled'] as bool?,
     );
   }
 
@@ -211,6 +230,7 @@ class UserAppData {
       'isFirstLoginCompleted': isFirstLoginCompleted,
       'lastUpdated': lastUpdated,
       'locationSetupCompleted': locationSetupCompleted,
+      'notificationsEnabled': notificationsEnabled,
     };
   }
 }

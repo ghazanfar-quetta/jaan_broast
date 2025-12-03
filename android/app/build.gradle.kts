@@ -20,12 +20,13 @@ val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "
 
 android {
     namespace = "com.jaan.jaan_broast"
-    compileSdk = 36  
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -35,7 +36,7 @@ android {
     defaultConfig {
         applicationId = "com.jaan.jaan_broast"
         minSdk = flutter.minSdkVersion
-        targetSdk = 36 
+        targetSdk = 36
         versionCode = flutterVersionCode
         versionName = flutterVersionName
     }
@@ -56,8 +57,12 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-messaging")
+
+    // Required for flutter_local_notifications
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
-// ADD THIS: Reliable APK copying for both debug and release
+
+// APK copying
 afterEvaluate {
     tasks.named("assembleDebug") {
         doLast {
@@ -68,7 +73,7 @@ afterEvaluate {
             println("Debug APK copied to Flutter location")
         }
     }
-    
+
     tasks.named("assembleRelease") {
         doLast {
             copy {

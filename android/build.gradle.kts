@@ -4,7 +4,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.1.0")
+        // Updated AGP so compileSdk = 36 works
+        classpath("com.android.tools.build:gradle:8.5.2")
         classpath("com.google.gms:google-services:4.4.0")
     }
 }
@@ -16,7 +17,8 @@ allprojects {
     }
 }
 
-// Remove any custom build directory configurations
+// ❗ Removed the broken JavaCompile block that caused all compilation errors
+
 subprojects {
     project.evaluationDependsOn(":app")
 }
