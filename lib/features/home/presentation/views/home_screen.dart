@@ -946,7 +946,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => LocationSetupScreen(
-          isAutoLocation: false, // User can choose manual or auto
+          isAutoLocation: true, // User can choose manual or auto
           preserveContactDetails: true, // Add this parameter
         ),
       ),

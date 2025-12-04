@@ -156,7 +156,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: CustomAppBar(title: 'Settings', showBackButton: false),
+      appBar: CustomAppBar(
+        title: 'Settings',
+        showBackButton: false,
+        automaticallyImplyLeading: false,
+      ),
       body: _SettingsContent(
         userName: _userName,
         profileImageUrl: _profileImageUrl,

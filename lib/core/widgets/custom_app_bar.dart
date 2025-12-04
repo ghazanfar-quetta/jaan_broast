@@ -6,13 +6,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
   final bool showBackButton;
+  final bool automaticallyImplyLeading;
 
   const CustomAppBar({
-    Key? key,
+    Key? superkey,
     required this.title,
     this.actions,
     this.showBackButton = false,
-  }) : super(key: key);
+    this.automaticallyImplyLeading = true,
+  }) : super(key: superkey);
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -27,6 +29,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
+      automaticallyImplyLeading: false,
       leading: showBackButton
           ? IconButton(
               icon: const Icon(Icons.arrow_back),

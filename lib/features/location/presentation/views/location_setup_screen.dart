@@ -44,6 +44,9 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     'Office': 'Office Number',
   };
 
+  // Listener token for LocationViewModel
+  VoidCallback? _locationListener;
+
   @override
   void initState() {
     super.initState();
@@ -51,18 +54,43 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     _loadSavedData();
   }
 
-  void _initializeLocation() async {
+  void _initializeLocation() {
     if (widget.isAutoLocation) {
+      // get view model and set up a listener so the UI updates when the VM completes
       final locationViewModel = Provider.of<LocationViewModel>(
         context,
         listen: false,
       );
 
-      // Auto-location should already be set from the previous step
-      // Just pre-fill the address field
+      // If location was already set before navigation, pre-fill immediately
       if (locationViewModel.currentLocation != 'Quetta') {
         _addressController.text = locationViewModel.currentLocation;
       }
+
+      // Register a listener to update address when view model changes
+      _locationListener = () {
+        // Only update UI for auto-location flows
+        if (!mounted) return;
+
+        final vm = Provider.of<LocationViewModel>(context, listen: false);
+
+        // If view model reports an address and it is not the default, fill the field
+        if (vm.isAutoLocation &&
+            vm.currentLocation.isNotEmpty &&
+            vm.currentLocation != 'Quetta') {
+          // Avoid unnecessary setState if controller already has the value
+          if (_addressController.text != vm.currentLocation) {
+            setState(() {
+              _addressController.text = vm.currentLocation;
+            });
+          }
+        }
+
+        // If there is an error, you may want to show it (optional)
+        // if (vm.error.isNotEmpty) { show a SnackBar or handle accordingly }
+      };
+
+      locationViewModel.addListener(_locationListener!);
     }
   }
 
@@ -99,21 +127,45 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
             // For now, we'll leave them empty for the user to enter new address
           }
         } else {
-          // Clear all fields for new setup (first time)
+          // CLEAR FIELDS FOR NEW SETUP, BUT PRESERVE AUTO-LOCATION ADDRESS
+          // If the screen was opened because of auto-location, don't clear the
+          // address controller that we already filled from LocationViewModel.
           setState(() {
             _nameController.clear();
             _phoneController.clear();
-            _addressController.clear();
             _landmarkController.clear();
             _streetNumberController.clear();
             _unitNumberController.clear();
             _selectedAddressType = null;
+
+            // IMPORTANT: only clear address if NOT using auto-location flow
+            if (!widget.isAutoLocation) {
+              _addressController.clear();
+            }
           });
         }
       }
     } catch (e) {
       print('❌ Error loading saved data: $e');
     }
+  }
+
+  @override
+  void dispose() {
+    // Remove listener if registered
+    if (_locationListener != null) {
+      final vm = Provider.of<LocationViewModel>(context, listen: false);
+      vm.removeListener(_locationListener!);
+      _locationListener = null;
+    }
+
+    _nameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _landmarkController.dispose();
+    _streetNumberController.dispose();
+    _unitNumberController.dispose();
+    super.dispose();
   }
 
   @override
@@ -897,16 +949,5 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
         );
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    _landmarkController.dispose();
-    _streetNumberController.dispose();
-    _unitNumberController.dispose();
-    super.dispose();
   }
 }
