@@ -18,6 +18,7 @@ import 'package:jaan_broast/features/cart/presentation/views/cart_screen.dart';
 import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 import 'package:jaan_broast/features/orders/presentation/views/order_history_screen.dart';
 import 'package:jaan_broast/features/settings/presentation/views/settings_screen.dart'; // ADD THIS IMPORT
+import 'package:jaan_broast/features/home/presentation/views/item_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -894,8 +895,7 @@ class _HomeScreenState extends State<HomeScreen> {
               imageUrl: item.imageUrl,
               isFavorite: item.isFavorite,
               onTap: () {
-                _viewModel.showFoodItemDetails(item);
-                _openFoodDetails(item);
+                ItemDetailsScreen.show(context: context, itemId: item.id);
               },
               onToggleFavorite: () {
                 _viewModel.toggleFavorite(item.id, context);
@@ -918,11 +918,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openSearchScreen() {
     // Navigate to dedicated search screen
     print('Open search screen');
-  }
-
-  void _openFoodDetails(FoodItem item) {
-    // Navigate to food details screen
-    print('Open food details for: ${item.name}');
   }
 
   void _viewCart() {

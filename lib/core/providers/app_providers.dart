@@ -13,6 +13,7 @@ import '../../features/cart/presentation/view_models/cart_view_model.dart';
 import 'package:jaan_broast/core/services/favorites_manager_service.dart';
 import 'package:jaan_broast/features/orders/presentation/view_models/order_view_model.dart';
 import '../../features/settings/presentation/view_models/settings_view_model.dart';
+import '../../features/home/presentation/view_models/item_details_view_model.dart';
 
 class AppProviders extends StatelessWidget {
   final Widget child;
@@ -39,6 +40,7 @@ class AppProviders extends StatelessWidget {
           create: (context) => OrderViewModel(),
         ),
         ChangeNotifierProvider(create: (context) => SettingsViewModel()),
+        ChangeNotifierProvider(create: (context) => ItemDetailsViewModel()),
       ],
       child: child,
     );

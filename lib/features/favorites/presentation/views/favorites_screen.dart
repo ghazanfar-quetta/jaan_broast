@@ -10,6 +10,7 @@ import '../view_models/favorites_view_model.dart';
 import 'package:jaan_broast/features/home/domain/models/food_item.dart';
 import 'package:jaan_broast/features/cart/presentation/views/cart_screen.dart';
 import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
+import 'package:jaan_broast/features/home/presentation/views/item_details_screen.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({Key? key}) : super(key: key);
@@ -278,7 +279,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           imageUrl: item.imageUrl,
           isFavorite: true, // Always true since we're in favorites
           onTap: () {
-            _openFoodDetails(item);
+            ItemDetailsScreen.show(context: context, itemId: item.id);
           },
           onToggleFavorite: () {
             _viewModel.removeFromFavorites(item.id, context);
@@ -746,10 +747,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ],
       ),
     );
-  }
-
-  void _openFoodDetails(FoodItem item) {
-    // You can implement navigation to food details screen here
   }
 
   void _showClearAllDialog(BuildContext context) {
