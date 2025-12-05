@@ -8,6 +8,7 @@ import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_mod
 import 'package:jaan_broast/features/cart/domain/models/cart_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:jaan_broast/core/constants/app_themes.dart';
+import 'package:jaan_broast/features/location/presentation/views/location_setup_screen.dart';
 
 class CartScreen extends StatefulWidget {
   final bool isOpen;
@@ -817,18 +818,19 @@ class _CartScreenState extends State<CartScreen>
   }
 
   void _navigateToProfileScreen(BuildContext context) {
-    // You'll need to implement this based on your app structure
-    // For now, show a message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Please navigate to profile screen to update your information',
+    // Navigate to LocationSetupScreen for updating user information
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationSetupScreen(
+          isAutoLocation: false, // Set to false for manual address update
+          preserveContactDetails: true, // Keep existing contact details
         ),
-        duration: Duration(seconds: 3),
       ),
-    );
-
-    // TODO: Replace with actual navigation to your profile screen
-    // Example: Navigator.pushNamed(context, '/profile');
+    ).then((_) {
+      // Optional: Refresh cart or user info after returning from location setup
+      // For example, you might want to refresh the cart or user data
+      // context.read<CartViewModel>().checkUserInfo();
+    });
   }
 }

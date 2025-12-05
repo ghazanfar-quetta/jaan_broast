@@ -50,7 +50,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = ScreenUtils.getScreenHeight(context);
-    final modalHeight = screenHeight * 0.6;
+    final modalHeight = screenHeight * 0.8; // Changed from 0.6 to 0.8 (80%)
 
     return ChangeNotifierProvider.value(
       value: _viewModel,
@@ -203,7 +203,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                     // Image
                     if (item.imageUrl.isNotEmpty)
                       Container(
-                        height: 150,
+                        height: 180, // Slightly increased for 80% modal
                         width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(
@@ -216,7 +216,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                         ),
                       ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Description
                     if (item.description.isNotEmpty)
@@ -233,7 +233,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                             item.description,
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                         ],
                       ),
 
@@ -262,11 +262,11 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                                 )
                                 .toList(),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                         ],
                       ),
 
-                    // Portions Selection
+                    // Portions Selection - CHANGED TO CHECKBOXES
                     _buildPortionsSection(viewModel, context),
 
                     // Add-ons (if available)
@@ -291,42 +291,13 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                                   color: Theme.of(context).primaryColor,
                                 ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                         ],
                       ),
 
-                    // Preparation Time & Rating
-                    Row(
-                      children: [
-                        if (item.preparationTime != null)
-                          Row(
-                            children: [
-                              Icon(Icons.access_time, size: 16),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${item.preparationTime} min',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        if (item.preparationTime != null && item.rating != null)
-                          const SizedBox(width: 16),
-                        if (item.rating != null)
-                          Row(
-                            children: [
-                              Icon(Icons.star, size: 16, color: Colors.amber),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${item.rating!.toStringAsFixed(1)} (${item.ratingCount ?? 0})',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-
+                    // REMOVED: Preparation Time & Rating section
                     const SizedBox(
-                      height: 100,
+                      height: 120,
                     ), // Extra space for bottom action bar
                   ],
                 ),
@@ -362,35 +333,33 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
+        Column(
           children: item.portions.map((portion) {
             final isSelected = viewModel.selectedPortion == portion.size;
-            return ChoiceChip(
-              label: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(portion.size),
-                  const SizedBox(height: 2),
-                  Text(
-                    portion.formattedPrice,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+            return CheckboxListTile(
+              title: Text(
+                portion.size,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
-              selected: isSelected,
-              onSelected: (_) => viewModel.selectPortion(portion.size),
-              selectedColor: Theme.of(context).primaryColor,
-              labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isSelected ? Colors.white : null,
+              subtitle: Text(
+                portion.formattedPrice,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+              value: isSelected,
+              onChanged: (_) => viewModel.selectPortion(portion.size),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+              activeColor: Theme.of(context).primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             );
           }).toList(),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -423,11 +392,15 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
               value: isSelected,
               onChanged: (_) => viewModel.toggleAddOn(addOn),
               controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+              activeColor: Theme.of(context).primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             );
           }).toList(),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
       ],
     );
   }

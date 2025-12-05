@@ -35,7 +35,7 @@ android {
 
     defaultConfig {
         applicationId = "com.jaan.jaan_broast"
-        minSdk = flutter.minSdkVersion
+        minSdk = 26
         targetSdk = 36
         versionCode = flutterVersionCode
         versionName = flutterVersionName
