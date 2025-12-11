@@ -13,7 +13,6 @@ import '../../../../../core/widgets/custom_app_bar.dart';
 import '../../../../../core/constants/button_styles.dart';
 import '../../../auth/domain/models/user_model.dart';
 import 'change_password_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   final Function(String?)? onProfileUpdated;
@@ -31,15 +30,18 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance; // ADD THIS
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   UserModel? _userModel;
   bool _isLoading = true;
   bool _isSaving = false;
-  bool _isUploadingImage = false; // ADD SEPARATE FLAG FOR IMAGE UPLOAD
+  bool _isUploadingImage = false;
   String? _profileImageUrl;
   bool _profilePictureChanged = false;
   final ImagePicker _imagePicker = ImagePicker();
+
+  // Add this to track temporary image file
+  File? _selectedImageFile;
 
   @override
   void initState() {
@@ -83,12 +85,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             _emailController.text = user.email ?? '';
             _phoneController.text = firestorePhone ?? user.phoneNumber ?? '';
 
-            // Load profile picture - local first, then Firestore, then Auth
-            _loadLocalProfilePicture();
-
-            if (_profileImageUrl == null) {
-              _profileImageUrl = firestorePhotoUrl ?? user.photoURL;
-            }
+            // Load profile picture from Firebase Storage URL
+            _profileImageUrl = firestorePhotoUrl ?? user.photoURL;
 
             _isLoading = false;
             _profilePictureChanged = false;
@@ -97,6 +95,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           print('✅ Loaded user data from Firestore:');
           print('   Name: ${_nameController.text}');
           print('   Phone: ${_phoneController.text}');
+          print('   Profile Image URL: $_profileImageUrl');
         } else {
           // If no Firestore document exists, create one with Auth data
           _createInitialUserDocument(user);
@@ -115,10 +114,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             _emailController.text = user.email ?? '';
             _phoneController.text = user.phoneNumber ?? '';
 
-            _loadLocalProfilePicture();
-            if (_profileImageUrl == null) {
-              _profileImageUrl = user.photoURL;
-            }
+            _profileImageUrl = user.photoURL;
 
             _isLoading = false;
             _profilePictureChanged = false;
@@ -132,7 +128,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _profilePictureChanged = false;
       });
     }
-    _syncWithFirestore();
   }
 
   Future<void> _createInitialUserDocument(User user) async {
@@ -150,22 +145,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       print('✅ Created initial user document in Firestore');
     } catch (e) {
       print('❌ Error creating user document: $e');
-    }
-  }
-
-  Future<void> _loadLocalProfilePicture() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedBase64Image = prefs.getString('profile_picture_base64');
-
-      if (savedBase64Image != null && savedBase64Image.isNotEmpty) {
-        setState(() {
-          _profileImageUrl = savedBase64Image;
-        });
-        print('✅ Loaded Base64 profile picture from storage');
-      }
-    } catch (e) {
-      print('❌ Error loading Base64 profile picture: $e');
     }
   }
 
@@ -188,7 +167,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           _isUploadingImage = false;
         });
 
-        // Show more helpful message
         String permissionType = source == ImageSource.camera
             ? 'camera'
             : 'storage';
@@ -205,13 +183,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         return;
       }
 
-      // Pick image with minimal settings for Base64
+      // Pick image with optimal settings for Firebase Storage
       final XFile? image = await _imagePicker
           .pickImage(
             source: source,
-            imageQuality: 50, // Low quality for smaller Base64
-            maxWidth: 250, // Small dimensions
-            maxHeight: 250,
+            imageQuality: 80, // Good quality for profile pictures
+            maxWidth: 800, // Reasonable dimensions
+            maxHeight: 800,
           )
           .timeout(
             const Duration(seconds: 30),
@@ -223,42 +201,27 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
       if (image != null) {
         try {
-          // Convert image to Base64 string
-          final bytes = await image.readAsBytes();
+          // Store the image file temporarily
+          _selectedImageFile = File(image.path);
 
-          // Check file size (max 500KB for SharedPreferences)
-          if (bytes.length > 500 * 1024) {
-            // Image too large, compress more
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
-                  'Image too large. Please select a smaller image.',
-                ),
-                backgroundColor: Colors.orange,
-              ),
-            );
-            return;
-          }
-
-          final base64Image = base64Encode(bytes);
-
-          // Save Base64 string to SharedPreferences
-          await _saveProfilePictureAsBase64(base64Image);
-
+          // Show preview immediately
           setState(() {
-            _profileImageUrl = base64Image; // Store Base64 string
+            _profileImageUrl = image.path; // Show local path as preview
             _isUploadingImage = false;
             _profilePictureChanged = true; // MARK AS CHANGED
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Profile image saved!'),
+              content: const Text('Image selected! Save profile to upload.'),
               backgroundColor: Theme.of(context).primaryColor,
             ),
           );
         } catch (e) {
           print('Error processing image: $e');
+          setState(() {
+            _isUploadingImage = false;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error processing image: $e'),
@@ -268,6 +231,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         }
       } else {
         // User canceled image selection
+        setState(() {
+          _isUploadingImage = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Image selection cancelled'),
@@ -277,32 +243,27 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       }
     } catch (e) {
       print('Error picking image: $e');
+      setState(() {
+        _isUploadingImage = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
-    } finally {
-      setState(() {
-        _isUploadingImage = false;
-      });
     }
   }
 
   Future<bool> _checkAndRequestPermission(ImageSource source) async {
     try {
       if (source == ImageSource.camera) {
-        // Check camera permission
         var status = await Permission.camera.status;
         if (status.isDenied) {
           status = await Permission.camera.request();
         }
         return status.isGranted;
       } else {
-        // For gallery, try multiple permission types
-
-        // First try photos permission (Android 13+)
         var photosStatus = await Permission.photos.status;
         if (photosStatus.isDenied || photosStatus.isRestricted) {
           photosStatus = await Permission.photos.request();
@@ -312,7 +273,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           return true;
         }
 
-        // Fallback to storage permission (older Android)
         var storageStatus = await Permission.storage.status;
         if (storageStatus.isDenied || storageStatus.isRestricted) {
           storageStatus = await Permission.storage.request();
@@ -326,13 +286,228 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     }
   }
 
-  Future<void> _saveProfilePictureAsBase64(String base64Image) async {
+  Future<String> _uploadImageToFirebaseStorage(File imageFile) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('profile_picture_base64', base64Image);
-      print('✅ Profile picture saved as Base64');
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('User not logged in');
+
+      print('🔄 Starting Firebase Storage upload...');
+      print('📁 File path: ${imageFile.path}');
+      print('📁 File size: ${await imageFile.length()} bytes');
+      print('👤 User UID: ${user.uid}');
+
+      // Create a unique filename
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'profile_${user.uid}_$timestamp.jpg';
+
+      // Create reference in Firebase Storage
+      final Reference storageRef = _storage
+          .ref()
+          .child('profile_pictures')
+          .child(fileName);
+
+      print('📤 Storage reference: ${storageRef.fullPath}');
+
+      // Compress the image before uploading
+      final compressedFile = await _compressImage(imageFile);
+
+      // Upload the file with metadata
+      final UploadTask uploadTask = storageRef.putFile(
+        compressedFile,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {
+            'userId': user.uid,
+            'uploadedAt': DateTime.now().toIso8601String(),
+            'purpose': 'profile_picture',
+          },
+        ),
+      );
+
+      print('📤 Upload task created, waiting for completion...');
+
+      // Show upload progress
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        double progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        print('📊 Upload progress: ${progress.toStringAsFixed(1)}%');
+      });
+
+      // Wait for upload to complete
+      final TaskSnapshot snapshot = await uploadTask
+          .timeout(const Duration(seconds: 60))
+          .catchError((error) {
+            print('❌ Upload timeout or error: $error');
+            throw Exception('Upload timed out after 60 seconds');
+          });
+
+      print('✅ Upload completed successfully!');
+
+      // Get the download URL
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      print('🔗 Download URL: $downloadUrl');
+
+      // Delete old profile picture if exists
+      await _deleteOldProfilePicture();
+
+      return downloadUrl;
     } catch (e) {
-      print('❌ Error saving profile picture as Base64: $e');
+      print('❌ Error in _uploadImageToFirebaseStorage: $e');
+
+      if (e is FirebaseException) {
+        print('🔥 Firebase Error Code: ${e.code}');
+        print('🔥 Firebase Error Message: ${e.message}');
+
+        if (e.code == 'storage/unauthorized') {
+          throw Exception(
+            'Storage permission denied. Check Firebase Storage rules.',
+          );
+        } else if (e.code == 'storage/canceled') {
+          throw Exception('Upload was canceled.');
+        }
+      }
+
+      throw e;
+    }
+  }
+
+  Future<File> _compressImage(File imageFile) async {
+    try {
+      // For now, return the original file
+      // You can add image compression logic here if needed
+      return imageFile;
+    } catch (e) {
+      print('Error compressing image: $e');
+      return imageFile;
+    }
+  }
+
+  Future<void> _deleteOldProfilePicture() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null || _userModel?.photoUrl == null) return;
+
+      final oldUrl = _userModel!.photoUrl;
+      if (oldUrl != null &&
+          oldUrl.startsWith('https://firebasestorage.googleapis.com/')) {
+        // Extract path from URL
+        final uri = Uri.parse(oldUrl);
+        final path = uri.path.split('/o/')[1].split('?')[0];
+        final decodedPath = Uri.decodeComponent(path);
+
+        final oldRef = _storage.ref().child(decodedPath);
+        await oldRef.delete();
+        print('🗑️ Deleted old profile picture');
+      }
+    } catch (e) {
+      print('⚠️ Could not delete old profile picture: $e');
+      // Don't throw error - it's okay if deletion fails
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (_userModel == null) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        String? newProfileImageUrl;
+
+        // Upload new profile image if selected
+        if (_selectedImageFile != null && _profilePictureChanged) {
+          print('📤 Uploading new profile image...');
+          newProfileImageUrl = await _uploadImageToFirebaseStorage(
+            _selectedImageFile!,
+          );
+          print('✅ Image uploaded, URL: $newProfileImageUrl');
+        } else {
+          newProfileImageUrl = _profileImageUrl;
+        }
+
+        // Update Firebase Auth display name
+        if (_nameController.text.trim() != user.displayName) {
+          await user.updateDisplayName(_nameController.text.trim());
+          print('✅ Updated display name in Firebase Auth');
+        }
+
+        // Update Firebase Auth photo URL if we have a new image
+        if (newProfileImageUrl != null &&
+            newProfileImageUrl.startsWith('http')) {
+          await user.updatePhotoURL(newProfileImageUrl);
+          print('✅ Updated photo URL in Firebase Auth');
+        }
+
+        // Prepare updated data for Firestore
+        Map<String, dynamic> updatedData = {
+          'personalInfo': {
+            'fullName': _nameController.text.trim(),
+            'phoneNumber': _phoneController.text.trim(),
+          },
+          'appData': {'lastUpdated': DateTime.now().toIso8601String()},
+        };
+
+        // Add photo URL to Firestore
+        if (newProfileImageUrl != null && newProfileImageUrl.isNotEmpty) {
+          updatedData['photoUrl'] = newProfileImageUrl;
+        }
+
+        // Update Firestore with the structured data
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .set(updatedData, SetOptions(merge: true));
+
+        print('✅ Profile saved to Firestore:');
+        print('   Name: ${_nameController.text.trim()}');
+        print('   Phone: ${_phoneController.text.trim()}');
+        print('   Profile Image URL: $newProfileImageUrl');
+
+        // Update the local UserModel
+        setState(() {
+          _userModel = _userModel!.copyWith(
+            displayName: _nameController.text.trim(),
+            phoneNumber: _phoneController.text.trim(),
+            photoUrl: newProfileImageUrl,
+          );
+          _profileImageUrl = newProfileImageUrl;
+          _selectedImageFile = null; // Clear temporary file
+          _profilePictureChanged = false;
+        });
+
+        // CALL THE CALLBACK TO UPDATE SETTINGS SCREEN
+        if (widget.onProfileUpdated != null) {
+          widget.onProfileUpdated!(_profileImageUrl);
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Profile updated successfully!'),
+            backgroundColor: Theme.of(context).primaryColor,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Navigate back
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      print('❌ Error saving profile: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving profile: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
     }
   }
 
@@ -411,245 +586,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-  Future<String> _uploadImageToFirebase(File imageFile) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) throw Exception('User not logged in');
-
-      print('🔄 Starting Firebase Storage upload...');
-      print('📁 File path: ${imageFile.path}');
-      print('📁 File exists: ${await imageFile.exists()}');
-      print('👤 User UID: ${user.uid}');
-
-      // Create a reference to the location you want to upload to in Firebase Storage
-      final Reference storageRef = _storage
-          .ref()
-          .child('profile_pictures')
-          .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-
-      print('📤 Storage reference: ${storageRef.fullPath}');
-
-      // Upload the file to Firebase Storage with metadata
-      final UploadTask uploadTask = storageRef.putFile(
-        imageFile,
-        SettableMetadata(
-          contentType: 'image/jpeg',
-          customMetadata: {
-            'uploadedBy': user.uid,
-            'uploadedAt': DateTime.now().toIso8601String(),
-          },
-        ),
-      );
-
-      print('📤 Upload task created, waiting for completion...');
-
-      // Listen to the upload task to see progress
-      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        print(
-          '📊 Upload progress: ${snapshot.bytesTransferred}/${snapshot.totalBytes} '
-          '(${((snapshot.bytesTransferred / snapshot.totalBytes) * 100).toStringAsFixed(1)}%)',
-        );
-      });
-
-      // Wait for the upload to complete with timeout
-      final TaskSnapshot snapshot = await uploadTask
-          .timeout(const Duration(seconds: 30))
-          .catchError((error) {
-            print('❌ Upload timeout or error: $error');
-            throw Exception('Upload timed out after 30 seconds');
-          });
-
-      print('✅ Upload completed successfully!');
-
-      // Get the download URL
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
-
-      print('🔗 Download URL: $downloadUrl');
-      return downloadUrl;
-    } catch (e) {
-      print('❌ Error in _uploadImageToFirebase: $e');
-
-      // More detailed error handling
-      if (e is FirebaseException) {
-        print('🔥 Firebase Error Code: ${e.code}');
-        print('🔥 Firebase Error Message: ${e.message}');
-
-        if (e.code == 'storage/unauthorized') {
-          throw Exception(
-            'Storage permission denied. Check Firebase Storage rules.',
-          );
-        } else if (e.code == 'storage/canceled') {
-          throw Exception('Upload was canceled.');
-        } else if (e.code == 'storage/unknown') {
-          throw Exception('Unknown storage error occurred.');
-        }
-      }
-
-      throw e;
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    if (_userModel == null) return;
-
-    setState(() {
-      _isSaving = true;
-    });
-
-    try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        // Update Firebase Auth display name
-        if (_nameController.text.trim() != user.displayName) {
-          await user.updateDisplayName(_nameController.text.trim());
-        }
-
-        // Prepare updated data for Firestore
-        Map<String, dynamic> updatedData = {
-          'personalInfo': {
-            'fullName': _nameController.text.trim(),
-            'phoneNumber': _phoneController.text.trim(),
-          },
-          'appData': {'lastUpdated': DateTime.now().toIso8601String()},
-        };
-
-        // If profile picture is a URL (from Firebase Storage), save it
-        if (_profileImageUrl != null && _profileImageUrl!.startsWith('http')) {
-          updatedData['photoUrl'] = _profileImageUrl;
-        }
-
-        // Update Firestore with the structured data
-        await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .set(updatedData, SetOptions(merge: true));
-
-        print('✅ Profile saved to Firestore:');
-        print('   Name: ${_nameController.text.trim()}');
-        print('   Phone: ${_phoneController.text.trim()}');
-
-        // Save profile picture locally if it's Base64
-        if (_profileImageUrl != null && !_profileImageUrl!.startsWith('http')) {
-          await _saveProfilePictureAsBase64(_profileImageUrl!);
-        }
-
-        // Update the local UserModel
-        setState(() {
-          _userModel = _userModel!.copyWith(
-            displayName: _nameController.text.trim(),
-            phoneNumber: _phoneController.text.trim(),
-            photoUrl: _profileImageUrl?.startsWith('http') ?? false
-                ? _profileImageUrl
-                : _userModel?.photoUrl,
-          );
-        });
-
-        // CALL THE CALLBACK TO UPDATE SETTINGS SCREEN
-        if (widget.onProfileUpdated != null) {
-          widget.onProfileUpdated!(_profileImageUrl);
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Profile updated successfully!'),
-            backgroundColor: Theme.of(context).primaryColor,
-          ),
-        );
-
-        // Navigate back
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      print('❌ Error saving profile: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error saving profile: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isSaving = false;
-      });
-    }
-  }
-
-  Future<void> _saveProfilePictureLocally(String imagePath) async {
-    try {
-      // Use shared_preferences to save the image path
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('local_profile_picture', imagePath);
-      print('✅ Profile picture saved locally: $imagePath');
-    } catch (e) {
-      print('❌ Error saving profile picture locally: $e');
-    }
-  }
-
-  void _handleChangePassword() {
-    final user = _auth.currentUser;
-
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No user logged in'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (user.isAnonymous) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'You are logged in as a guest. Changing password is not available for guest accounts.',
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    // Check if user signed in with Google
-    final providerData = user.providerData;
-    final isGoogleUser = providerData.any(
-      (userInfo) => userInfo.providerId == 'google.com',
-    );
-
-    if (isGoogleUser) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'You are logged in with Google account. Changing password is not available for Google accounts.',
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    // User is signed in with email/password - navigate to change password screen
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
-    );
-  }
-
   bool get _hasChanges {
-    // Check if name changed
     final nameChanged =
         _nameController.text.trim() != (_userModel?.displayName ?? '');
-
-    // Check if phone changed
     final phoneChanged =
         _phoneController.text.trim() != (_userModel?.phoneNumber ?? '');
-
-    // Check if profile picture changed (using the flag)
     final pictureChanged = _profilePictureChanged;
-
-    print('📊 Change Detection:');
-    print('   Name changed: $nameChanged');
-    print('   Phone changed: $phoneChanged');
-    print('   Profile picture changed: $pictureChanged');
 
     return nameChanged || phoneChanged || pictureChanged;
   }
@@ -893,21 +835,49 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       return _buildDefaultProfileIcon();
     }
 
-    // Check if it's likely Base64
-    bool isLikelyBase64(String str) {
-      if (str.length < 100) return false;
-      if (str.startsWith('/9j/') ||
-          str.startsWith('iVBORw') ||
-          str.startsWith('R0lGOD')) {
-        return true;
+    // Check if it's a local file path (starts with /)
+    if (_profileImageUrl!.startsWith('/')) {
+      try {
+        return Image.file(
+          File(_profileImageUrl!),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildDefaultProfileIcon();
+          },
+        );
+      } catch (e) {
+        return _buildDefaultProfileIcon();
       }
-      final validBase64Regex = RegExp(r'^[A-Za-z0-9+/]+={0,2}$');
-      return validBase64Regex.hasMatch(str);
     }
-
-    final isBase64 = isLikelyBase64(_profileImageUrl!);
-
-    if (isBase64) {
+    // Check if it's a Firebase Storage URL
+    else if (_profileImageUrl!.startsWith('http')) {
+      return Image.network(
+        _profileImageUrl!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _buildDefaultProfileIcon();
+        },
+      );
+    }
+    // Could be Base64 (for backward compatibility)
+    else if (_profileImageUrl!.length > 100 &&
+        (_profileImageUrl!.startsWith('/9j/') ||
+            _profileImageUrl!.startsWith('iVBORw'))) {
       try {
         return Image.memory(
           base64Decode(_profileImageUrl!),
@@ -921,26 +891,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       } catch (e) {
         return _buildDefaultProfileIcon();
       }
-    } else if (_profileImageUrl!.startsWith('http')) {
-      return Image.network(
-        _profileImageUrl!,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildDefaultProfileIcon();
-        },
-      );
     } else {
-      return Image.file(
-        File(_profileImageUrl!),
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildDefaultProfileIcon();
-        },
-      );
+      return _buildDefaultProfileIcon();
     }
   }
 
@@ -972,7 +924,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           label: 'Email Address',
           icon: Icons.email_outlined,
           hintText: 'Enter your email address',
-          enabled: false, // Email cannot be changed directly
+          enabled: false,
         ),
         const SizedBox(height: AppConstants.paddingMedium),
         _buildTextField(
@@ -1025,7 +977,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         fillColor: Theme.of(context).colorScheme.surface,
       ),
       onChanged: (value) {
-        setState(() {}); // Trigger rebuild to update save button state
+        setState(() {});
       },
     );
   }
@@ -1094,41 +1046,58 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
+  void _handleChangePassword() {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No user logged in'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (user.isAnonymous) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'You are logged in as a guest. Changing password is not available for guest accounts.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final providerData = user.providerData;
+    final isGoogleUser = providerData.any(
+      (userInfo) => userInfo.providerId == 'google.com',
+    );
+
+    if (isGoogleUser) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'You are logged in with Google account. Changing password is not available for Google accounts.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
+    );
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
-  }
-
-  Future<void> _syncWithFirestore() async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return;
-
-      final userDoc = await _firestore.collection('users').doc(user.uid).get();
-
-      if (userDoc.exists) {
-        final userData = userDoc.data()!;
-        final personalInfo = userData['personalInfo'] as Map<String, dynamic>?;
-
-        if (personalInfo != null) {
-          final firestorePhone = personalInfo['phoneNumber'] as String?;
-
-          // If Firestore has phone number but controller is empty, sync it
-          if (firestorePhone != null &&
-              firestorePhone.isNotEmpty &&
-              _phoneController.text.isEmpty) {
-            setState(() {
-              _phoneController.text = firestorePhone;
-            });
-            print('✅ Synced phone number from Firestore: $firestorePhone');
-          }
-        }
-      }
-    } catch (e) {
-      print('❌ Error syncing with Firestore: $e');
-    }
   }
 }
