@@ -120,16 +120,9 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
             });
           }
 
-          // Also load address data to show current address (optional)
           final address = userData?['address'] as Map<String, dynamic>?;
-          if (address != null) {
-            // You can choose to pre-fill address fields or leave them empty
-            // For now, we'll leave them empty for the user to enter new address
-          }
+          if (address != null) {}
         } else {
-          // CLEAR FIELDS FOR NEW SETUP, BUT PRESERVE AUTO-LOCATION ADDRESS
-          // If the screen was opened because of auto-location, don't clear the
-          // address controller that we already filled from LocationViewModel.
           setState(() {
             _nameController.clear();
             _phoneController.clear();
@@ -886,13 +879,10 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
 
   void _saveUserDataToFirebase(Map<String, dynamic> userData) async {
     try {
-      // Get current user directly from Firebase Auth
       final currentUser = FirebaseAuth.instance.currentUser;
 
       if (currentUser == null) {
         print('❌ No user logged in. Cannot save data to Firebase.');
-
-        // Show error message to user
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -905,16 +895,44 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
         return;
       }
 
-      // Initialize Firebase Firestore
       final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-      // Save user data to Firestore
+      // First, check if user already has personal info
+      final existingDoc = await firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      Map<String, dynamic> dataToSave;
+
+      if (existingDoc.exists && widget.preserveContactDetails) {
+        // Merge existing personal info with new address data
+        final existingData = existingDoc.data()!;
+        dataToSave = {
+          ...existingData, // Keep existing data
+          'address': userData['address'], // Update only address
+          'appData': {
+            ...existingData['appData'] ?? {},
+            'lastUpdated': DateTime.now().toIso8601String(),
+          },
+        };
+
+        // Don't overwrite personalInfo if preserveContactDetails is true
+        if (dataToSave['personalInfo'] == null) {
+          dataToSave['personalInfo'] = userData['personalInfo'];
+        }
+      } else {
+        // First time setup or update all data
+        dataToSave = userData;
+      }
+
+      // Save merged data to Firestore
       await firestore
           .collection('users')
           .doc(currentUser.uid)
-          .set(userData, SetOptions(merge: true));
+          .set(dataToSave, SetOptions(merge: true));
 
-      // Also save address as a separate document for easy querying
+      // Save address as separate document
       await firestore
           .collection('users')
           .doc(currentUser.uid)
@@ -926,19 +944,11 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
             'createdAt': DateTime.now().toIso8601String(),
           });
 
-      print('✅ User data saved successfully to Firebase');
-
-      // Print confirmation
-      print('📝 User Data saved to Firebase:');
+      print('✅ User data saved/merged successfully to Firebase');
       print('👤 User ID: ${currentUser.uid}');
-      print('📧 User Email: ${currentUser.email}');
       print('📍 Address: ${userData['address']['fullAddress']}');
-      print('📞 Phone: ${userData['personalInfo']['phoneNumber']}');
-      print('👨‍💼 Name: ${userData['personalInfo']['fullName']}');
     } catch (e) {
       print('❌ Error saving user data to Firebase: $e');
-
-      // Show error message to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

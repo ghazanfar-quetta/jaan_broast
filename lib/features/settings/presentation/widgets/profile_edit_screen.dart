@@ -1,3 +1,4 @@
+// lib/features/settings/presentation/widgets/profile_edit_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -56,25 +57,50 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             .get();
 
         if (userDoc.exists) {
-          setState(() {
-            _userModel = UserModel.fromFirestore(user.uid, userDoc.data()!);
-            _nameController.text = _userModel?.displayName ?? '';
-            _emailController.text = _userModel?.email ?? user.email ?? '';
-            _phoneController.text = _userModel?.phoneNumber ?? '';
+          final userData = userDoc.data()!;
 
-            // First try to load locally saved profile picture
+          // Extract personal info from Firestore structure
+          final personalInfo =
+              userData['personalInfo'] as Map<String, dynamic>?;
+          final firestoreName = personalInfo?['fullName'] as String?;
+          final firestorePhone = personalInfo?['phoneNumber'] as String?;
+          final firestorePhotoUrl = userData['photoUrl'] as String?;
+
+          setState(() {
+            // Create UserModel with data from Firestore
+            _userModel = UserModel(
+              uid: user.uid,
+              email: user.email,
+              displayName: firestoreName ?? user.displayName,
+              phoneNumber: firestorePhone ?? user.phoneNumber,
+              photoUrl: firestorePhotoUrl ?? user.photoURL,
+              isAnonymous: user.isAnonymous,
+              isEmailVerified: user.emailVerified,
+            );
+
+            // Set controllers with data from Firestore (priority) or Auth
+            _nameController.text = firestoreName ?? user.displayName ?? '';
+            _emailController.text = user.email ?? '';
+            _phoneController.text = firestorePhone ?? user.phoneNumber ?? '';
+
+            // Load profile picture - local first, then Firestore, then Auth
             _loadLocalProfilePicture();
 
-            // If no local picture, try Firebase URL
             if (_profileImageUrl == null) {
-              _profileImageUrl = _userModel?.photoUrl ?? user.photoURL;
+              _profileImageUrl = firestorePhotoUrl ?? user.photoURL;
             }
 
             _isLoading = false;
-            _profilePictureChanged = false; // RESET THE FLAG
+            _profilePictureChanged = false;
           });
+
+          print('✅ Loaded user data from Firestore:');
+          print('   Name: ${_nameController.text}');
+          print('   Phone: ${_phoneController.text}');
         } else {
-          // Create basic user model from Firebase Auth data
+          // If no Firestore document exists, create one with Auth data
+          _createInitialUserDocument(user);
+
           setState(() {
             _userModel = UserModel(
               uid: user.uid,
@@ -89,25 +115,41 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             _emailController.text = user.email ?? '';
             _phoneController.text = user.phoneNumber ?? '';
 
-            // First try to load locally saved profile picture
             _loadLocalProfilePicture();
-
-            // If no local picture, try Firebase URL
             if (_profileImageUrl == null) {
               _profileImageUrl = user.photoURL;
             }
 
             _isLoading = false;
-            _profilePictureChanged = false; // RESET THE FLAG
+            _profilePictureChanged = false;
           });
         }
       }
     } catch (e) {
-      print('Error loading user data: $e');
+      print('❌ Error loading user data: $e');
       setState(() {
         _isLoading = false;
-        _profilePictureChanged = false; // RESET THE FLAG
+        _profilePictureChanged = false;
       });
+    }
+    _syncWithFirestore();
+  }
+
+  Future<void> _createInitialUserDocument(User user) async {
+    try {
+      await _firestore.collection('users').doc(user.uid).set({
+        'personalInfo': {
+          'fullName': user.displayName ?? '',
+          'phoneNumber': user.phoneNumber ?? '',
+        },
+        'appData': {
+          'accountCreatedAt': DateTime.now().toIso8601String(),
+          'lastUpdated': DateTime.now().toIso8601String(),
+        },
+      }, SetOptions(merge: true));
+      print('✅ Created initial user document in Firestore');
+    } catch (e) {
+      print('❌ Error creating user document: $e');
     }
   }
 
@@ -457,28 +499,50 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        // Update user profile in Firebase Auth
+        // Update Firebase Auth display name
         if (_nameController.text.trim() != user.displayName) {
           await user.updateDisplayName(_nameController.text.trim());
         }
 
-        // Update user data in Firestore
-        final updatedUser = _userModel!.copyWith(
-          displayName: _nameController.text.trim(),
-          phoneNumber: _phoneController.text.trim(),
-          // We're NOT saving the local image path as it won't persist
-        );
+        // Prepare updated data for Firestore
+        Map<String, dynamic> updatedData = {
+          'personalInfo': {
+            'fullName': _nameController.text.trim(),
+            'phoneNumber': _phoneController.text.trim(),
+          },
+          'appData': {'lastUpdated': DateTime.now().toIso8601String()},
+        };
 
+        // If profile picture is a URL (from Firebase Storage), save it
+        if (_profileImageUrl != null && _profileImageUrl!.startsWith('http')) {
+          updatedData['photoUrl'] = _profileImageUrl;
+        }
+
+        // Update Firestore with the structured data
         await _firestore
             .collection('users')
             .doc(user.uid)
-            .set(updatedUser.toFirestore(), SetOptions(merge: true));
+            .set(updatedData, SetOptions(merge: true));
 
-        // Save profile picture to local storage for this session
+        print('✅ Profile saved to Firestore:');
+        print('   Name: ${_nameController.text.trim()}');
+        print('   Phone: ${_phoneController.text.trim()}');
+
+        // Save profile picture locally if it's Base64
         if (_profileImageUrl != null && !_profileImageUrl!.startsWith('http')) {
-          // Save the local image path to device storage for this session
-          await _saveProfilePictureLocally(_profileImageUrl!);
+          await _saveProfilePictureAsBase64(_profileImageUrl!);
         }
+
+        // Update the local UserModel
+        setState(() {
+          _userModel = _userModel!.copyWith(
+            displayName: _nameController.text.trim(),
+            phoneNumber: _phoneController.text.trim(),
+            photoUrl: _profileImageUrl?.startsWith('http') ?? false
+                ? _profileImageUrl
+                : _userModel?.photoUrl,
+          );
+        });
 
         // CALL THE CALLBACK TO UPDATE SETTINGS SCREEN
         if (widget.onProfileUpdated != null) {
@@ -496,7 +560,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      print('Error saving profile: $e');
+      print('❌ Error saving profile: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error saving profile: $e'),
@@ -1036,5 +1100,35 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _syncWithFirestore() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        final personalInfo = userData['personalInfo'] as Map<String, dynamic>?;
+
+        if (personalInfo != null) {
+          final firestorePhone = personalInfo['phoneNumber'] as String?;
+
+          // If Firestore has phone number but controller is empty, sync it
+          if (firestorePhone != null &&
+              firestorePhone.isNotEmpty &&
+              _phoneController.text.isEmpty) {
+            setState(() {
+              _phoneController.text = firestorePhone;
+            });
+            print('✅ Synced phone number from Firestore: $firestorePhone');
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ Error syncing with Firestore: $e');
+    }
   }
 }
