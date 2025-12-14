@@ -5,6 +5,7 @@ import '../../../../core/services/firebase_auth_service.dart';
 import '../../../../core/services/local_storage_service.dart';
 import '../../../../core/services/user_service.dart';
 import 'package:jaan_broast/core/services/fcm_token_manager.dart';
+import 'package:jaan_broast/core/services/auth_status_service.dart';
 
 class AuthViewModel with ChangeNotifier {
   final FirebaseAuthService _authService = FirebaseAuthService();
@@ -29,19 +30,21 @@ class AuthViewModel with ChangeNotifier {
   // FCM Token Management after successful authentication
   Future<void> _handlePostAuthSuccess(User user) async {
     try {
-      // Create user document
+      // Create/update user document
       await _createUserDocumentAfterAuth(user);
 
-      // Save FCM token after successful login
+      // Mark user as logged in
+      await AuthStatusService.setUserLoggedIn(user.uid);
+
+      // Save FCM token
       await FCMTokenManager.onUserLogin();
 
       // Set logged in state
       await LocalStorageService.setIsLoggedIn(true);
 
-      print('✅ Auth success - FCM token saved for user: ${user.uid}');
+      print('✅ Auth success - User logged in: ${user.uid}');
     } catch (e) {
       print('⚠️ Post-auth processing error (non-critical): $e');
-      // Continue even if FCM token saving fails
     }
   }
 
@@ -227,12 +230,21 @@ class AuthViewModel with ChangeNotifier {
   }
 
   // Sign out
+  // Sign out
   Future<void> signOut() async {
     try {
       print('🔄 AuthViewModel: Starting sign out...');
 
-      // Remove FCM token before signing out
-      await FCMTokenManager.onUserLogout();
+      final user = _authService.currentUser;
+
+      // Mark user as logged out in Firestore FIRST
+      if (user != null) {
+        await AuthStatusService.setUserLoggedOut(user.uid);
+      }
+
+      // Remove FCM token (but keep it for promotional notifications)
+      // We'll only remove if user disables notifications in settings
+      // For logout, we just mark as logged out
 
       // Sign out from Firebase
       await _authService.signOut();

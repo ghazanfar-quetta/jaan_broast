@@ -18,10 +18,11 @@ class UserService {
         'photoUrl': user.photoURL,
         'isAnonymous': user.isAnonymous,
         'isEmailVerified': user.emailVerified,
-        'notificationsEnabled': true, // Default to enabled
+        'notificationsEnabled': true,
         'fcmToken': null,
+        'isCurrentlyLoggedIn': true, // Default to true when creating
         'createdAt': FieldValue.serverTimestamp(),
-        'lastSignedIn': FieldValue.serverTimestamp(),
+        'lastActiveAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -31,19 +32,37 @@ class UserService {
       if (userDoc.exists) {
         // Update existing document
         final existingData = userDoc.data();
-        if (existingData?['notificationsEnabled'] != null) {
-          userData['notificationsEnabled'] =
-              existingData!['notificationsEnabled'];
+
+        if (existingData != null) {
+          // Preserve existing preferences
+          if (existingData['notificationsEnabled'] != null) {
+            userData['notificationsEnabled'] =
+                existingData['notificationsEnabled'];
+          }
+
+          // Preserve login status if already set
+          if (existingData['isCurrentlyLoggedIn'] != null) {
+            userData['isCurrentlyLoggedIn'] =
+                existingData['isCurrentlyLoggedIn'];
+          } else {
+            // Set to true since user is logging in
+            userData['isCurrentlyLoggedIn'] = true;
+          }
+
+          // Preserve FCM token if exists
+          if (existingData['fcmToken'] != null) {
+            userData['fcmToken'] = existingData['fcmToken'];
+          }
         }
 
         await _firestore.collection('users').doc(user.uid).update({
           ...userData,
-          'lastSignedIn': FieldValue.serverTimestamp(),
+          'lastActiveAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
         print('✅ User document updated for: ${user.uid}');
       } else {
-        // Create new document
+        // Create new document - user is logging in, so set to true
         await _firestore.collection('users').doc(user.uid).set(userData);
         print('✅ User document created for: ${user.uid}');
       }

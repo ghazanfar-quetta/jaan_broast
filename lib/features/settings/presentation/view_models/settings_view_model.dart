@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../../../core/services/user_service.dart';
+import 'package:jaan_broast/core/services/auth_status_service.dart';
 
 class SettingsViewModel with ChangeNotifier {
   bool _isDarkMode = false;
@@ -93,6 +94,7 @@ class SettingsViewModel with ChangeNotifier {
   }
 
   // Toggle notifications
+  // Toggle notifications
   Future<void> toggleNotifications(bool value) async {
     if (_notificationsEnabled == value) return;
 
@@ -118,7 +120,15 @@ class SettingsViewModel with ChangeNotifier {
           await _enableNotifications();
         } else {
           // Disable notifications - remove FCM token
-          await _disableNotifications();
+          // But only if user is logged out
+          final isLoggedIn = await AuthStatusService.isUserLoggedIn(user.uid);
+          if (!isLoggedIn) {
+            await _disableNotifications();
+          } else {
+            print(
+              '⚠️ User is logged in, keeping FCM token for promotional notifications',
+            );
+          }
         }
       }
     } catch (e) {
