@@ -1,3 +1,4 @@
+import 'package:jaan_broast/core/services/fcm_token_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -22,14 +23,18 @@ import 'package:jaan_broast/core/services/firestore_cart_service.dart';
 import 'features/cart/presentation/view_models/cart_view_model.dart';
 import 'features/orders/presentation/view_models/order_view_model.dart';
 import 'core/services/notification_service.dart';
+import 'core/utils/notification_navigator.dart';
+
+// Global navigator key for notification navigation
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 // Background message handler - MUST be top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // IMPORTANT: Don't call Firebase.initializeApp() here anymore
-  // The Flutter plugin handles this automatically
-
   print("🔄 Handling background message: ${message.messageId}");
+
+  // Initialize notification service
+  await NotificationService().initialize();
 
   if (message.notification != null) {
     print('📱 Background Notification Title: ${message.notification!.title}');
@@ -39,6 +44,15 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Process data payload if needed
   if (message.data.isNotEmpty) {
     print('📊 Background Message Data: ${message.data}');
+
+    // You can show local notification for background messages
+    if (message.notification != null) {
+      await NotificationService().showSimpleNotification(
+        title: message.notification!.title ?? 'Jaan Broast',
+        body: message.notification!.body ?? 'New notification',
+        payload: message.data.toString(),
+      );
+    }
   }
 }
 
@@ -70,11 +84,15 @@ void main() async {
     await SharedPreferences.getInstance();
     print('✅ SharedPreferences initialized');
 
-    // Setup notification handlers in foreground
-    _setupFirebaseMessaging();
+    // Initialize notification service
+    print('🔔 Initializing Notification Service...');
+    await NotificationService().initialize();
+    print('✅ Notification Service initialized');
 
-    // Request notification permissions (non-blocking)
-    _requestNotificationPermissionInBackground();
+    // Check and update FCM token if user is logged in
+    print('🔔 Checking FCM token status...');
+    await FCMTokenManager.checkAndUpdateToken();
+    print('✅ FCM token check complete');
 
     print('🎉 All initialization complete!');
   } catch (e, stackTrace) {
@@ -84,125 +102,6 @@ void main() async {
   }
 
   runApp(const MyApp());
-}
-
-void _setupFirebaseMessaging() {
-  try {
-    final messaging = FirebaseMessaging.instance;
-
-    // Get token if already available
-    messaging.getToken().then((token) {
-      if (token != null) {
-        print('🔑 Initial FCM Token: $token');
-        _saveFcmToken(token);
-      }
-    });
-
-    // Listen for token refresh
-    messaging.onTokenRefresh.listen((token) {
-      print('🔄 FCM Token refreshed: $token');
-      _saveFcmToken(token);
-    });
-
-    // Handle messages when app is in FOREGROUND
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('📲 Foreground message received!');
-      print('📱 Message ID: ${message.messageId}');
-
-      if (message.notification != null) {
-        print('📢 Notification Title: ${message.notification!.title}');
-        print('📢 Notification Body: ${message.notification!.body}');
-      }
-
-      // You can show a custom dialog or update UI here
-      // The plugin automatically shows notifications when app is in background
-    });
-
-    // Handle when user taps on notification (app was in background/terminated)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('👆 User tapped notification!');
-      print('📱 Message ID: ${message.messageId}');
-
-      // You can navigate to specific screen based on notification data
-      if (message.data.isNotEmpty) {
-        print('📊 Notification data: ${message.data}');
-        // Example: Navigate to order details, chat, etc.
-      }
-    });
-
-    // Get initial notification if app was launched from terminated state
-    messaging.getInitialMessage().then((RemoteMessage? message) {
-      if (message != null) {
-        print('🚀 App launched from notification');
-        print('📱 Initial Message ID: ${message.messageId}');
-
-        // Handle navigation based on initial notification
-        if (message.data.isNotEmpty) {
-          print('📊 Initial notification data: ${message.data}');
-        }
-      }
-    });
-
-    print('✅ Firebase Messaging setup complete');
-  } catch (e) {
-    print('❌ Firebase Messaging setup error: $e');
-  }
-}
-
-Future<void> _saveFcmToken(String token) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('fcm_token', token);
-    print('💾 FCM token saved to SharedPreferences');
-
-    // Send token to your backend server if needed
-    // await _sendTokenToServer(token);
-  } catch (e) {
-    print('❌ Failed to save FCM token: $e');
-  }
-}
-
-void _requestNotificationPermissionInBackground() {
-  // Delay permission request to avoid blocking app start
-  Future.delayed(const Duration(seconds: 3), () async {
-    try {
-      final hasAsked =
-          await LocalStorageService.getNotificationPermissionAsked();
-
-      if (!hasAsked) {
-        print('🔔 Requesting notification permission...');
-
-        final messaging = FirebaseMessaging.instance;
-
-        // Request permission with basic options
-        final NotificationSettings settings = await messaging.requestPermission(
-          alert: true, // Show alerts
-          badge: true, // Update app badge
-          sound: true, // Play sound
-          provisional: false, // Don't use provisional (quiet) permissions
-        );
-
-        print('🔔 Permission status: ${settings.authorizationStatus}');
-
-        // Get token after permission
-        if (settings.authorizationStatus != AuthorizationStatus.denied) {
-          final token = await messaging.getToken();
-          if (token != null) {
-            print('🔑 Permission granted, FCM Token: $token');
-            await _saveFcmToken(token);
-          }
-        }
-
-        // Mark as asked
-        await LocalStorageService.setNotificationPermissionAsked(true);
-        print('✅ Notification permission flow complete');
-      } else {
-        print('🔔 Notification permission already asked');
-      }
-    } catch (e) {
-      print('❌ Notification permission error: $e');
-    }
-  });
 }
 
 class MyApp extends StatelessWidget {
@@ -228,14 +127,9 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<SettingsViewModel>(
         builder: (context, settingsViewModel, child) {
-          // Initialize notification settings when app starts
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            // Optional: Initialize any notification-related settings
-            // settingsViewModel.initializeNotificationSettings();
-          });
-
           return MaterialApp(
             title: 'Jaan Broast',
+            navigatorKey: NotificationNavigator.navigatorKey,
             theme: AppThemes.lightTheme,
             darkTheme: AppThemes.darkTheme,
             themeMode: settingsViewModel.isDarkMode

@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import '../../../../core/services/user_service.dart'; // ADD THIS
+import '../../../../core/services/user_service.dart';
 
 class SettingsViewModel with ChangeNotifier {
   bool _isDarkMode = false;
@@ -15,7 +15,7 @@ class SettingsViewModel with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final UserService _userService = UserService(); // ADD THIS
+  final UserService _userService = UserService();
 
   bool get isDarkMode => _isDarkMode;
   bool get notificationsEnabled => _notificationsEnabled;
@@ -114,11 +114,11 @@ class SettingsViewModel with ChangeNotifier {
 
         // Handle FCM token based on preference
         if (value) {
-          // Only save token if enabling, don't request permission
-          await _saveFCMToken();
+          // Enable notifications - get and save FCM token
+          await _enableNotifications();
         } else {
-          // Remove token when disabling
-          await _removeFCMToken();
+          // Disable notifications - remove FCM token
+          await _disableNotifications();
         }
       }
     } catch (e) {
@@ -128,8 +128,48 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
+  // Enable notifications - get permission and save token
+  Future<void> _enableNotifications() async {
+    try {
+      // Request permission if needed
+      final hasPermission = await checkNotificationPermission();
+      if (!hasPermission) {
+        final granted = await _requestNotificationPermission();
+        if (!granted) {
+          print('⚠️ Notification permission not granted');
+          return;
+        }
+      }
+
+      // Get and save FCM token
+      final user = _auth.currentUser;
+      if (user != null) {
+        final token = await _firebaseMessaging.getToken();
+        if (token != null) {
+          await _userService.saveFCMToken(user.uid, token);
+          print('✅ FCM token saved after enabling notifications: $token');
+        }
+      }
+    } catch (e) {
+      print('❌ Error enabling notifications: $e');
+    }
+  }
+
+  // Disable notifications - remove token
+  Future<void> _disableNotifications() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await _userService.removeFCMToken(user.uid);
+        print('✅ FCM token removed after disabling notifications');
+      }
+    } catch (e) {
+      print('❌ Error disabling notifications: $e');
+    }
+  }
+
   // Request notification permission
-  Future<void> _requestNotificationPermission() async {
+  Future<bool> _requestNotificationPermission() async {
     try {
       final settings = await _firebaseMessaging.requestPermission(
         alert: true,
@@ -141,18 +181,16 @@ class SettingsViewModel with ChangeNotifier {
         sound: true,
       );
 
-      print('Notification permission status: ${settings.authorizationStatus}');
+      print(
+        '🔔 Notification permission status: ${settings.authorizationStatus}',
+      );
 
-      // If permission denied, update setting
-      if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        _notificationsEnabled = false;
-        notifyListeners();
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool(_notificationsKey, false);
-      }
+      // Return true if authorized or provisional
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (e) {
-      print('Error requesting notification permission: $e');
+      print('❌ Error requesting notification permission: $e');
+      return false;
     }
   }
 

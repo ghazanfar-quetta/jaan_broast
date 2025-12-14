@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/services/firebase_auth_service.dart';
 import '../../../../core/services/local_storage_service.dart';
 import '../../../../core/services/user_service.dart';
+import 'package:jaan_broast/core/services/fcm_token_manager.dart';
 
 class AuthViewModel with ChangeNotifier {
   final FirebaseAuthService _authService = FirebaseAuthService();
@@ -22,6 +23,25 @@ class AuthViewModel with ChangeNotifier {
     } catch (e) {
       print('❌ Error creating user document: $e');
       // Don't throw - auth succeeded even if document creation failed
+    }
+  }
+
+  // FCM Token Management after successful authentication
+  Future<void> _handlePostAuthSuccess(User user) async {
+    try {
+      // Create user document
+      await _createUserDocumentAfterAuth(user);
+
+      // Save FCM token after successful login
+      await FCMTokenManager.onUserLogin();
+
+      // Set logged in state
+      await LocalStorageService.setIsLoggedIn(true);
+
+      print('✅ Auth success - FCM token saved for user: ${user.uid}');
+    } catch (e) {
+      print('⚠️ Post-auth processing error (non-critical): $e');
+      // Continue even if FCM token saving fails
     }
   }
 
@@ -46,8 +66,6 @@ class AuthViewModel with ChangeNotifier {
     await _markAsLoggedInBefore();
   }
 
-  // ... ALL YOUR EXISTING METHODS REMAIN EXACTLY THE SAME ...
-
   // Sign in with Google
   Future<bool> signInWithGoogle() async {
     _setLoading(true);
@@ -59,11 +77,11 @@ class AuthViewModel with ChangeNotifier {
       final User? user = await _authService.signInWithGoogle();
 
       if (user != null) {
-        print(
-          '✅ AuthViewModel: Google Sign-In successful, setting logged in state',
-        );
-        await _createUserDocumentAfterAuth(user);
-        await LocalStorageService.setIsLoggedIn(true);
+        print('✅ AuthViewModel: Google Sign-In successful');
+
+        // Handle post-auth success (including FCM token)
+        await _handlePostAuthSuccess(user);
+
         _setLoading(false);
         return true;
       } else {
@@ -89,7 +107,9 @@ class AuthViewModel with ChangeNotifier {
       final User? user = await _authService.signInWithGoogle();
 
       if (user != null) {
-        await LocalStorageService.setIsLoggedIn(true);
+        // Handle post-auth success (including FCM token)
+        await _handlePostAuthSuccess(user);
+
         _setLoading(false);
         return true;
       } else {
@@ -124,8 +144,9 @@ class AuthViewModel with ChangeNotifier {
       );
 
       if (user != null) {
-        await _createUserDocumentAfterAuth(user);
-        await LocalStorageService.setIsLoggedIn(true);
+        // Handle post-auth success (including FCM token)
+        await _handlePostAuthSuccess(user);
+
         _setLoading(false);
         return true;
       } else {
@@ -152,8 +173,8 @@ class AuthViewModel with ChangeNotifier {
       );
       final user = _authService.auth.currentUser;
       if (user != null) {
-        // ADD THIS - Create user document
-        await _createUserDocumentAfterAuth(user);
+        // Handle post-auth success (including FCM token)
+        await _handlePostAuthSuccess(user);
       }
       _errorMessage = '';
       return true;
@@ -188,8 +209,9 @@ class AuthViewModel with ChangeNotifier {
       final User? user = await _authService.signInAnonymously();
 
       if (user != null) {
-        await _createUserDocumentAfterAuth(user);
-        await LocalStorageService.setIsLoggedIn(true);
+        // Handle post-auth success (including FCM token)
+        await _handlePostAuthSuccess(user);
+
         _setLoading(false);
         return true;
       } else {
@@ -201,6 +223,28 @@ class AuthViewModel with ChangeNotifier {
       _errorMessage = 'Error during guest sign-in: $e';
       _setLoading(false);
       return false;
+    }
+  }
+
+  // Sign out
+  Future<void> signOut() async {
+    try {
+      print('🔄 AuthViewModel: Starting sign out...');
+
+      // Remove FCM token before signing out
+      await FCMTokenManager.onUserLogout();
+
+      // Sign out from Firebase
+      await _authService.signOut();
+
+      // Clear local storage
+      await LocalStorageService.setIsLoggedIn(false);
+
+      print('✅ AuthViewModel: Sign out successful');
+    } catch (e) {
+      print('❌ Error during sign out: $e');
+      // Still try to clear local state even if Firebase signout fails
+      await LocalStorageService.setIsLoggedIn(false);
     }
   }
 

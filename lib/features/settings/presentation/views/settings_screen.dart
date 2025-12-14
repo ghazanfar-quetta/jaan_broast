@@ -15,6 +15,9 @@ import '../widgets/privacy_policy_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/help_support_screen.dart';
 import '../widgets/restaurant_details_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:jaan_broast/features/auth/presentation/view_models/auth_view_model.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -809,11 +812,51 @@ class _SettingsContent extends StatelessWidget {
   }
 
   Future<void> _performLogout(BuildContext context) async {
-    final settingsViewModel = Provider.of<SettingsViewModel>(
-      context,
-      listen: false,
-    );
-    await settingsViewModel.logout(context);
-    // The success message and navigation are now handled in the ViewModel
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Get AuthViewModel and call signOut (this includes FCM token removal)
+      final authViewModel = context.read<AuthViewModel>();
+      await authViewModel.signOut();
+
+      // Close loading indicator
+      if (context.mounted) Navigator.of(context).pop();
+
+      // Navigate to auth screen and clear all routes
+      if (context.mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
+      }
+
+      // Show success message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Logged out successfully'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading indicator if still showing
+      if (context.mounted) Navigator.of(context).pop();
+
+      // Show error message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error during logout: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+
+      print('❌ Logout error: $e');
+    }
   }
 }
