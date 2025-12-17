@@ -5,7 +5,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'features/onboarding/presentation/view_models/onboarding_view_model.dart';
 import 'features/auth/presentation/view_models/auth_view_model.dart';
 import 'features/onboarding/presentation/views/onboarding_screen.dart';
@@ -15,7 +14,6 @@ import 'features/home/presentation/views/home_screen.dart';
 import 'features/home/presentation/view_models/home_view_model.dart';
 import 'features/location/presentation/view_models/location_view_model.dart';
 import 'features/settings/presentation/view_models/settings_view_model.dart';
-import 'core/services/local_storage_service.dart';
 import 'core/constants/app_themes.dart';
 import 'features/favorites/presentation/view_models/favorites_view_model.dart';
 import 'core/services/favorites_manager_service.dart';

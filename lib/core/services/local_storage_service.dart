@@ -90,4 +90,26 @@ class LocalStorageService {
     currentFavorites.remove(foodItemId);
     await prefs.setStringList('cached_favorites', currentFavorites);
   }
+
+  // Add this to LocalStorageService class
+  static Future<void> setNotificationPermissionStatus(bool granted) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notification_permission_granted', granted);
+  }
+
+  static Future<bool> getNotificationPermissionStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('notification_permission_granted') ?? false;
+  }
+
+  // Add to LocalStorageService class if not already present
+  static Future<void> setUserAllowedNotification(bool allowed) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('user_allowed_notification', allowed);
+  }
+
+  static Future<bool> getUserAllowedNotification() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('user_allowed_notification') ?? false;
+  }
 }
