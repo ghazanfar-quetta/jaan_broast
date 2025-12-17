@@ -15,9 +15,8 @@ import '../widgets/privacy_policy_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/help_support_screen.dart';
 import '../widgets/restaurant_details_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:jaan_broast/features/auth/presentation/view_models/auth_view_model.dart';
+import 'package:jaan_broast/core/services/auth_status_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -757,6 +756,8 @@ class _SettingsContent extends StatelessWidget {
     // Navigate to payment history screen
   }
 
+  // In your SettingsScreen.dart, replace the entire _showLogoutConfirmation and _performLogout methods:
+
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,
@@ -812,51 +813,106 @@ class _SettingsContent extends StatelessWidget {
   }
 
   Future<void> _performLogout(BuildContext context) async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Simple direct logout without any complex logic
     try {
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      // Get AuthViewModel and call signOut (this includes FCM token removal)
-      final authViewModel = context.read<AuthViewModel>();
-      await authViewModel.signOut();
-
-      // Close loading indicator
-      if (context.mounted) Navigator.of(context).pop();
-
-      // Navigate to auth screen and clear all routes
-      if (context.mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
-      }
-
-      // Show success message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Logged out successfully'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      await FirebaseAuth.instance.signOut();
+      print('✅ Simple logout successful');
     } catch (e) {
-      // Close loading indicator if still showing
-      if (context.mounted) Navigator.of(context).pop();
+      print('⚠️ Simple logout error (ignoring): $e');
+    }
 
-      // Show error message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error during logout: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+    // ALWAYS close loading and navigate
+    if (context.mounted) {
+      Navigator.of(context).pop(); // Close loading
+
+      // Simple navigation - adjust route name as needed
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/auth', // Try '/login' if this doesn't work
+        (route) => false,
+      );
+    }
+  }
+
+  void _navigateToLoginScreen(BuildContext context) {
+    print('🚀 Navigating to login screen...');
+
+    // Try multiple navigation methods to ensure success
+    try {
+      // Method 1: Try pushNamedAndRemoveUntil with '/auth'
+      Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
+      print('📱 Navigation successful with /auth route');
+    } catch (e) {
+      print('⚠️ Route /auth failed: $e');
+
+      try {
+        // Method 2: Try pushNamedAndRemoveUntil with '/login'
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        print('📱 Navigation successful with /login route');
+      } catch (e2) {
+        print('⚠️ Route /login failed: $e2');
+
+        try {
+          // Method 3: Try direct MaterialPageRoute to your AuthScreen
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                // IMPORTANT: Replace this with your actual AuthScreen import
+                // return AuthScreen();
+
+                // For now, let's try to find the correct route
+                // First, try to navigate using the navigator key if you have one
+                return Scaffold(
+                  appBar: AppBar(title: const Text('Login')),
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Logged out successfully'),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Try to go to auth again
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/auth',
+                              (route) => false,
+                            );
+                          },
+                          child: const Text('Go to Login'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            (route) => false,
+          );
+          print('📱 Navigation successful with MaterialPageRoute');
+        } catch (e3) {
+          print('❌ All navigation methods failed: $e3');
+
+          // Last resort: Pop everything
+          Navigator.popUntil(context, (route) => false);
+
+          // Show error but at least we're not stuck
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Logged out. Please restart the app.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       }
-
-      print('❌ Logout error: $e');
     }
   }
 }

@@ -161,7 +161,7 @@ We will respond to your inquiry within 48 hours.
 ''',
           ),
 
-          _buildLastUpdated(context), // PASS CONTEXT
+          // _buildLastUpdated(context), // PASS CONTEXT
           const SizedBox(height: AppConstants.paddingLarge),
         ],
       ),
@@ -257,31 +257,31 @@ We will respond to your inquiry within 48 hours.
     );
   }
 
-  Widget _buildLastUpdated(BuildContext context) {
-    // ADD CONTEXT PARAMETER
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppConstants.paddingMedium),
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-      ),
-      child: Text(
-        'This Privacy Policy was last updated on ${_getCurrentDate()}.',
-        style: TextStyle(
-          fontSize: ScreenUtils.responsiveFontSize(
-            context,
-            mobile: AppConstants.captionTextSize,
-            tablet: AppConstants.bodyTextSize,
-            desktop: AppConstants.bodyTextSize,
-          ),
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-          fontStyle: FontStyle.italic,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
+  //  Widget _buildLastUpdated(BuildContext context) {
+  // ADD CONTEXT PARAMETER
+  //    return Container(
+  //      width: double.infinity,
+  //      padding: const EdgeInsets.all(AppConstants.paddingMedium),
+  //      decoration: BoxDecoration(
+  //        color: Theme.of(context).primaryColor.withOpacity(0.1),
+  //        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+  //      ),
+  //      child: Text(
+  //        'This Privacy Policy was last updated on ${_getCurrentDate()}.',
+  //        style: TextStyle(
+  //          fontSize: ScreenUtils.responsiveFontSize(
+  //            context,
+  //            mobile: AppConstants.captionTextSize,
+  //            tablet: AppConstants.bodyTextSize,
+  //            desktop: AppConstants.bodyTextSize,
+  //          ),
+  //          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+  //          fontStyle: FontStyle.italic,
+  //        ),
+  //        textAlign: TextAlign.center,
+  //      ),
+  //    );
+  //  }
 
   String _getCurrentDate() {
     final now = DateTime.now();

@@ -1,10 +1,11 @@
 // lib/features/auth/presentation/view_models/auth_view_model.dart
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/services/firebase_auth_service.dart';
 import '../../../../core/services/local_storage_service.dart';
 import '../../../../core/services/user_service.dart';
-import 'package:jaan_broast/core/services/fcm_service.dart'; // FIXED: Changed from fcm_token_manager.dart to fcm_service.dart
+import 'package:jaan_broast/core/services/fcm_service.dart';
 import 'package:jaan_broast/core/services/auth_status_service.dart';
 
 class AuthViewModel with ChangeNotifier {
@@ -16,6 +17,9 @@ class AuthViewModel with ChangeNotifier {
 
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
+
+  bool _isSigningOut = false;
+  bool get isSigningOut => _isSigningOut;
 
   Future<void> _createUserDocumentAfterAuth(User user) async {
     try {
@@ -230,32 +234,64 @@ class AuthViewModel with ChangeNotifier {
   }
 
   // Sign out
+  // In AuthViewModel.dart
   Future<void> signOut() async {
+    if (_isSigningOut) return;
+
+    _setSigningOut(true);
+
     try {
-      print('🔄 AuthViewModel: Starting sign out...');
+      print('🔄 Starting sign out...');
 
+      // Get user info
       final user = _authService.currentUser;
+      final userId = user?.uid;
 
-      // Mark user as logged out in Firestore FIRST
-      if (user != null) {
-        await AuthStatusService.setUserLoggedOut(user.uid);
+      // Update Firestore status
+      if (userId != null) {
+        try {
+          await AuthStatusService.setUserLoggedOut(userId);
+        } catch (e) {
+          print('⚠️ Firestore update failed: $e');
+        }
       }
 
-      // Note: We don't remove FCM token on logout to allow promotional notifications
-      // Token will be updated next time user logs in
-
-      // Sign out from Firebase
+      // Firebase signout
       await _authService.signOut();
 
       // Clear local storage
       await LocalStorageService.setIsLoggedIn(false);
 
-      print('✅ AuthViewModel: Sign out successful');
+      print('✅ Sign out successful');
     } catch (e) {
-      print('❌ Error during sign out: $e');
-      // Still try to clear local state even if Firebase signout fails
+      print('❌ Sign out error: $e');
+      // Still clear local storage
       await LocalStorageService.setIsLoggedIn(false);
+      rethrow;
+    } finally {
+      _setSigningOut(false);
     }
+  }
+
+  void _setSigningOut(bool value) {
+    if (_isSigningOut != value) {
+      _isSigningOut = value;
+      notifyListeners();
+    }
+  }
+
+  void _cancelAllListeners() {
+    // Cancel any active Firestore stream subscriptions
+    // Look for these in your ViewModel and cancel them
+    // Example:
+    // if (_ordersStreamSubscription != null) {
+    //   _ordersStreamSubscription!.cancel();
+    //   _ordersStreamSubscription = null;
+    // }
+
+    // If you're using StreamBuilder with .snapshots() directly,
+    // Firebase will handle cancellation automatically.
+    // But if you're managing subscriptions manually in ViewModel, cancel them here.
   }
 
   Future<bool> sendPasswordResetEmail(String email) async {

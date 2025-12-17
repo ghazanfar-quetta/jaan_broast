@@ -4,6 +4,9 @@ import '../../../../../core/constants/app_constants.dart';
 import '../../../../../core/utils/screen_utils.dart';
 import '../../../../../core/widgets/custom_app_bar.dart';
 import '../../../../../core/constants/button_styles.dart';
+// Add these imports for logout functionality
+import 'package:jaan_broast/core/services/auth_status_service.dart';
+import 'package:jaan_broast/core/services/local_storage_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({Key? key}) : super(key: key);
@@ -136,6 +139,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
           ),
         ),
+        const SizedBox(height: AppConstants.paddingSmall),
+        Text(
+          'Note: You will be logged out after password change and need to login again with new password.',
+          style: TextStyle(
+            fontSize: ScreenUtils.responsiveFontSize(
+              context,
+              mobile: AppConstants.captionTextSize,
+              tablet: AppConstants.captionTextSize,
+              desktop: AppConstants.captionTextSize,
+            ),
+            color: Theme.of(context).colorScheme.primary,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
       ],
     );
   }
@@ -239,6 +256,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           _buildRequirementItem('At least 6 characters long'),
           _buildRequirementItem('Should not be the same as current password'),
           _buildRequirementItem('Confirm password must match new password'),
+          _buildRequirementItem(
+            'You will be logged out after successful change',
+          ),
         ],
       ),
     );
@@ -372,16 +392,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       // Update password
       await user.updatePassword(_newPasswordController.text);
 
-      // Success
+      // Success - Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Password changed successfully!'),
+          content: const Text(
+            'Password changed successfully! Logging you out...',
+          ),
           backgroundColor: Theme.of(context).primaryColor,
+          duration: const Duration(seconds: 2),
         ),
       );
 
-      // Navigate back
-      Navigator.of(context).pop();
+      // Log out user and navigate to login
+      await _logoutAndNavigateToLogin(context);
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'Failed to change password. ';
 
@@ -417,6 +440,55 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _logoutAndNavigateToLogin(BuildContext context) async {
+    try {
+      final user = _auth.currentUser;
+
+      // Update Firestore status
+      if (user != null) {
+        try {
+          await AuthStatusService.setUserLoggedOut(user.uid);
+        } catch (e) {
+          print('⚠️ Firestore update failed: $e');
+        }
+      }
+
+      // Sign out from Firebase
+      await _auth.signOut();
+
+      // Clear local storage
+      await LocalStorageService.setIsLoggedIn(false);
+
+      print('✅ User logged out after password change');
+
+      // Navigate to login screen
+      _navigateToLoginScreen(context);
+    } catch (e) {
+      print('❌ Error during logout: $e');
+      // Still try to navigate
+      _navigateToLoginScreen(context);
+    }
+  }
+
+  void _navigateToLoginScreen(BuildContext context) {
+    // Close any open dialogs or loading indicators
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+
+    // Navigate to login screen
+    Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
+
+    // Show final message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Please login with your new password'),
+        backgroundColor: Theme.of(context).primaryColor,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override

@@ -4,8 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:provider/provider.dart'; // ADD THIS IMPORT
 import '../../../../core/services/user_service.dart';
 import 'package:jaan_broast/core/services/auth_status_service.dart';
+import 'package:jaan_broast/features/auth/presentation/view_models/auth_view_model.dart'; // ADD THIS IMPORT
 
 class SettingsViewModel with ChangeNotifier {
   bool _isDarkMode = false;
@@ -36,21 +38,18 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  // Load notification preference
   Future<void> _loadNotificationPreference() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _notificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
       notifyListeners();
 
-      // Also check Firebase for the setting
       await _syncNotificationWithFirebase();
     } catch (e) {
       print('Error loading notification preference: $e');
     }
   }
 
-  // Sync with Firebase
   Future<void> _syncNotificationWithFirebase() async {
     try {
       final user = _auth.currentUser;
@@ -69,7 +68,6 @@ class SettingsViewModel with ChangeNotifier {
               notificationSetting != _notificationsEnabled) {
             _notificationsEnabled = notificationSetting;
 
-            // Update local storage
             final prefs = await SharedPreferences.getInstance();
             await prefs.setBool(_notificationsKey, notificationSetting);
 
@@ -93,8 +91,6 @@ class SettingsViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  // Toggle notifications
-  // Toggle notifications
   Future<void> toggleNotifications(bool value) async {
     if (_notificationsEnabled == value) return;
 
@@ -102,11 +98,9 @@ class SettingsViewModel with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Save to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_notificationsKey, value);
 
-      // Save to Firebase
       final user = _auth.currentUser;
       if (user != null) {
         await _firestore.collection('users').doc(user.uid).update({
@@ -114,13 +108,9 @@ class SettingsViewModel with ChangeNotifier {
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        // Handle FCM token based on preference
         if (value) {
-          // Enable notifications - get and save FCM token
           await _enableNotifications();
         } else {
-          // Disable notifications - remove FCM token
-          // But only if user is logged out
           final isLoggedIn = await AuthStatusService.isUserLoggedIn(user.uid);
           if (!isLoggedIn) {
             await _disableNotifications();
@@ -138,10 +128,8 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  // Enable notifications - get permission and save token
   Future<void> _enableNotifications() async {
     try {
-      // Request permission if needed
       final hasPermission = await checkNotificationPermission();
       if (!hasPermission) {
         final granted = await _requestNotificationPermission();
@@ -151,7 +139,6 @@ class SettingsViewModel with ChangeNotifier {
         }
       }
 
-      // Get and save FCM token
       final user = _auth.currentUser;
       if (user != null) {
         final token = await _firebaseMessaging.getToken();
@@ -165,7 +152,6 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  // Disable notifications - remove token
   Future<void> _disableNotifications() async {
     try {
       final user = _auth.currentUser;
@@ -178,7 +164,6 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  // Request notification permission
   Future<bool> _requestNotificationPermission() async {
     try {
       final settings = await _firebaseMessaging.requestPermission(
@@ -195,7 +180,6 @@ class SettingsViewModel with ChangeNotifier {
         '🔔 Notification permission status: ${settings.authorizationStatus}',
       );
 
-      // Return true if authorized or provisional
       return settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (e) {
@@ -204,7 +188,6 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  // Save FCM token
   Future<void> _saveFCMToken() async {
     try {
       final user = _auth.currentUser;
@@ -219,7 +202,6 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  // Remove FCM token
   Future<void> _removeFCMToken() async {
     try {
       final user = _auth.currentUser;
@@ -231,7 +213,6 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  // Check notification permission
   Future<bool> checkNotificationPermission() async {
     try {
       final settings = await _firebaseMessaging.getNotificationSettings();
@@ -243,18 +224,13 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  // Initialize notification settings on app start
   Future<void> initializeNotificationSettings() async {
     try {
-      // Check current permission status
       final hasPermission = await checkNotificationPermission();
 
-      // If user has permission but setting is false, update it
       if (hasPermission && !_notificationsEnabled) {
         await toggleNotifications(true);
-      }
-      // If user doesn't have permission but setting is true, update it
-      else if (!hasPermission && _notificationsEnabled) {
+      } else if (!hasPermission && _notificationsEnabled) {
         await toggleNotifications(false);
       }
     } catch (e) {
@@ -262,25 +238,67 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  // Updated logout method with Firebase Auth integration
-  Future<void> logout(BuildContext context) async {
-    try {
-      await _auth.signOut();
-      print('User logged out successfully');
+  // FIXED: Simple logout method that doesn't try to manage auth state
+  // In SettingsViewModel.dart - Replace the logout method with this:
 
-      // Navigate to auth screen and clear navigation stack
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil('/auth', (Route<dynamic> route) => false);
+  Future<void> logout(BuildContext context) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Logout'),
+        content: Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout != true) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      // 1. Update Firestore
+      final user = _auth.currentUser;
+      if (user != null) {
+        try {
+          await AuthStatusService.setUserLoggedOut(user.uid);
+        } catch (e) {
+          print('⚠️ Firestore update failed: $e');
+        }
+      }
+
+      // 2. Firebase signout
+      await _auth.signOut();
+
+      // 3. Clear local storage (you need to import LocalStorageService)
+      // await LocalStorageService.setIsLoggedIn(false);
+
+      print('✅ Logout successful');
     } catch (e) {
-      print('Error during logout: $e');
-      // Show error message to user
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Logout failed: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('❌ Logout error: $e');
+    } finally {
+      // ALWAYS navigate away
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/auth', // Make sure this is your correct login route
+          (route) => false,
+        );
+      }
     }
   }
 }
