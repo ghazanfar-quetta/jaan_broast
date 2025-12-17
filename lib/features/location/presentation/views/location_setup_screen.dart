@@ -58,6 +58,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
       }
     });
     _loadSavedData();
+    _ensureUserDataExists();
   }
 
   void _initializeLocation() {
@@ -95,6 +96,8 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     }
   }
 
+  // In lib/features/location/presentation/views/location_setup_screen.dart
+
   void _loadSavedData() async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -108,24 +111,39 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
 
       if (userDoc.exists) {
         final userData = userDoc.data();
-        if (widget.preserveContactDetails) {
-          final personalInfo =
-              userData?['personalInfo'] as Map<String, dynamic>?;
-          if (personalInfo != null) {
-            if (mounted) {
-              setState(() {
-                _nameController.text =
-                    personalInfo['fullName']?.toString() ?? '';
-                _phoneController.text =
-                    personalInfo['phoneNumber']?.toString() ?? '';
-              });
-            }
-          }
-        } else {
+
+        // ALWAYS load personal info if it exists, regardless of preserveContactDetails
+        final personalInfo = userData?['personalInfo'] as Map<String, dynamic>?;
+        if (personalInfo != null) {
           if (mounted) {
             setState(() {
-              _nameController.clear();
-              _phoneController.clear();
+              // Load name if available
+              if (personalInfo['fullName'] != null &&
+                  personalInfo['fullName'].toString().isNotEmpty) {
+                _nameController.text =
+                    personalInfo['fullName']?.toString() ?? '';
+              }
+
+              // Load phone if available
+              if (personalInfo['phoneNumber'] != null &&
+                  personalInfo['phoneNumber'].toString().isNotEmpty) {
+                _phoneController.text =
+                    personalInfo['phoneNumber']?.toString() ?? '';
+              }
+            });
+          }
+        }
+
+        // Load address data only if preserveContactDetails is true
+        if (widget.preserveContactDetails) {
+          final address = userData?['address'] as Map<String, dynamic>?;
+          if (address != null) {
+            // You can load address data here if needed
+          }
+        } else {
+          // First time setup - clear only address fields, keep contact info
+          if (mounted) {
+            setState(() {
               _landmarkController.clear();
               _streetNumberController.clear();
               _unitNumberController.clear();
@@ -994,6 +1012,8 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     }
   }
 
+  // In the same LocationSetupScreen file
+
   void _saveUserDataToFirebase(Map<String, dynamic> userData) async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -1022,24 +1042,36 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
 
       Map<String, dynamic> dataToSave;
 
-      if (existingDoc.exists && widget.preserveContactDetails) {
-        // Merge existing personal info with new address data
+      if (existingDoc.exists) {
+        // Merge existing data with new data
         final existingData = existingDoc.data()!;
+
+        // Always preserve existing personalInfo fields
+        final existingPersonalInfo =
+            existingData['personalInfo'] as Map<String, dynamic>? ?? {};
+
         dataToSave = {
-          ...existingData, // Keep existing data
-          'address': userData['address'], // Update only address
+          ...existingData, // Keep all existing data
+          // Update address
+          'address': userData['address'],
+
+          // Merge personal info - keep existing fields, add/update new ones
+          'personalInfo': {
+            ...existingPersonalInfo,
+            'fullName': _nameController.text.trim(), // Update name
+            'phoneNumber': _phoneController.text.trim(), // Update phone
+          },
+
+          // Update app data
           'appData': {
             ...existingData['appData'] ?? {},
+            'isFirstLoginCompleted': true,
+            'locationSetupCompleted': true,
             'lastUpdated': DateTime.now().toIso8601String(),
           },
         };
-
-        // Don't overwrite personalInfo if preserveContactDetails is true
-        if (dataToSave['personalInfo'] == null) {
-          dataToSave['personalInfo'] = userData['personalInfo'];
-        }
       } else {
-        // First time setup or update all data
+        // First time setup - use complete user data
         dataToSave = userData;
       }
 
@@ -1063,6 +1095,8 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
 
       print('✅ User data saved/merged successfully to Firebase');
       print('👤 User ID: ${currentUser.uid}');
+      print('📝 Name: ${_nameController.text.trim()}');
+      print('📱 Phone: ${_phoneController.text.trim()}');
       print('📍 Address: ${userData['address']['fullAddress']}');
     } catch (e) {
       print('❌ Error saving user data to Firebase: $e');
@@ -1075,6 +1109,43 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _ensureUserDataExists() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      final userDoc = await firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      // If user document doesn't exist, create it with basic info
+      if (!userDoc.exists) {
+        final basicUserData = {
+          'personalInfo': {
+            'email': currentUser.email ?? '',
+            'createdAt': DateTime.now().toIso8601String(),
+          },
+          'appData': {
+            'isFirstLoginCompleted': false,
+            'locationSetupCompleted': false,
+            'accountCreatedAt': DateTime.now().toIso8601String(),
+          },
+        };
+
+        await firestore
+            .collection('users')
+            .doc(currentUser.uid)
+            .set(basicUserData);
+
+        print('✅ Created basic user document in Firebase');
+      }
+    } catch (e) {
+      print('❌ Error ensuring user data exists: $e');
     }
   }
 }

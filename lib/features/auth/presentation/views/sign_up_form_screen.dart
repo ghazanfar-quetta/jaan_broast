@@ -1,4 +1,5 @@
 // lib/features/auth/presentation/views/sign_up_form_screen.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Add this import
@@ -30,6 +31,8 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
     super.dispose();
   }
 
+  // In lib/features/auth/presentation/views/sign_up_form_screen.dart
+
   void _handleSignUp(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
@@ -40,6 +43,9 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
       );
 
       if (success && mounted) {
+        // Save user data to Firebase immediately after signup
+        await _saveUserDataToFirebase();
+
         // UPDATED: Handle location initialization and navigation
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
@@ -53,6 +59,48 @@ class _SignUpFormScreenState extends State<SignUpFormScreen> {
       } else {
         _showErrorSnackbar(context, authViewModel.errorMessage);
       }
+    }
+  }
+
+  // Add this method to save user data to Firebase
+  Future<void> _saveUserDataToFirebase() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        print('❌ No user logged in after signup');
+        return;
+      }
+
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      // Prepare user data
+      final userData = {
+        'personalInfo': {
+          'fullName': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'phoneNumber': '', // Phone will be added later in location setup
+          'createdAt': DateTime.now().toIso8601String(),
+        },
+        'appData': {
+          'isFirstLoginCompleted':
+              false, // Will be set to true after location setup
+          'locationSetupCompleted': false,
+          'accountCreatedAt': DateTime.now().toIso8601String(),
+        },
+      };
+
+      // Save to Firestore
+      await firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .set(userData, SetOptions(merge: true));
+
+      print('✅ Signup data saved to Firebase');
+      print('👤 User ID: ${currentUser.uid}');
+      print('📝 Name: ${_nameController.text.trim()}');
+      print('📧 Email: ${_emailController.text.trim()}');
+    } catch (e) {
+      print('❌ Error saving signup data to Firebase: $e');
     }
   }
 
