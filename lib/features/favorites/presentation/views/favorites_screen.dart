@@ -11,6 +11,7 @@ import 'package:jaan_broast/features/home/domain/models/food_item.dart';
 import 'package:jaan_broast/features/cart/presentation/views/cart_screen.dart';
 import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 import 'package:jaan_broast/features/home/presentation/views/item_details_screen.dart';
+import 'package:jaan_broast/features/home/presentation/views/home_screen.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({Key? key}) : super(key: key);
@@ -647,7 +648,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             ElevatedButton(
               onPressed: () {
                 // Navigate back to home screen
-                Navigator.pop(context);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => HomeScreen()),
+                  (Route<dynamic> route) => false,
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
