@@ -1,6 +1,7 @@
-// live/features/settings/presentation/views/settings_screen.dart
+// lib/features/settings/presentation/views/settings_screen.dart
 import 'dart:math';
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,7 +17,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/help_support_screen.dart';
 import '../widgets/restaurant_details_screen.dart';
 import 'package:jaan_broast/features/auth/presentation/view_models/auth_view_model.dart';
-import 'package:jaan_broast/core/services/auth_status_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -30,12 +30,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String _userName = 'Loading...';
   String? _profileImageUrl;
+  String? _phoneNumber;
   bool _isLoading = true;
+
+  // Add a StreamSubscription to listen for real-time updates
+  StreamSubscription<DocumentSnapshot>? _userDataSubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _setupUserDataListener(); // Use listener instead of one-time load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final settingsViewModel = Provider.of<SettingsViewModel>(
         context,
@@ -45,113 +49,170 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  void _handleHelpSupportTap() {
-    print('Help & Support tapped');
-    // Navigate to help & support screen
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
+  @override
+  void dispose() {
+    // Cancel the subscription when screen is disposed
+    _userDataSubscription?.cancel();
+    super.dispose();
   }
 
-  Future<void> _loadUserData() async {
-    try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        final userDoc = await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .get();
-
-        if (userDoc.exists) {
-          final userData = userDoc.data();
-
-          // Try to load locally saved profile picture first
-          String? localImagePath = await _loadLocalProfilePicture();
-
-          setState(() {
-            _userName =
-                userData?['displayName'] as String? ??
-                user.displayName ??
-                'User';
-
-            // Use local picture if available, otherwise use Firebase URL
-            _profileImageUrl =
-                localImagePath ??
-                userData?['photoUrl'] as String? ??
-                user.photoURL;
-
-            _isLoading = false;
-          });
-        } else {
-          // Try to load locally saved profile picture first
-          String? localImagePath = await _loadLocalProfilePicture();
-
-          setState(() {
-            _userName = user.displayName ?? 'User';
-
-            // Use local picture if available, otherwise use Firebase URL
-            _profileImageUrl = localImagePath ?? user.photoURL;
-
-            _isLoading = false;
-          });
-        }
-      } else {
-        setState(() {
-          _userName = 'Guest User';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error loading user data: $e');
+  void _setupUserDataListener() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      // Listen to real-time updates from Firestore
+      _userDataSubscription = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .listen(
+            (DocumentSnapshot snapshot) {
+              if (snapshot.exists) {
+                _updateUserDataFromSnapshot(snapshot);
+              } else {
+                // If no document exists, use auth data
+                _updateUserDataFromAuth(user);
+              }
+            },
+            onError: (error) {
+              print('Error listening to user data: $error');
+              _updateUserDataFromAuth(user);
+            },
+          );
+    } else {
       setState(() {
-        _userName = 'Error loading name';
+        _userName = 'Guest User';
+        _profileImageUrl = null;
+        _phoneNumber = null;
         _isLoading = false;
       });
     }
   }
 
+  void _updateUserDataFromSnapshot(DocumentSnapshot snapshot) {
+    final userData = snapshot.data() as Map<String, dynamic>?;
+    final personalInfo = userData?['personalInfo'] as Map<String, dynamic>?;
+
+    // Get user from auth for fallback
+    final authUser = _auth.currentUser;
+
+    setState(() {
+      // Get name from Firestore or Auth
+      _userName =
+          personalInfo?['fullName'] as String? ??
+          userData?['displayName'] as String? ??
+          authUser?.displayName ??
+          'User';
+
+      // Get phone from Firestore
+      _phoneNumber = personalInfo?['phoneNumber'] as String?;
+
+      // Get profile image - try multiple sources
+      _profileImageUrl = userData?['photoUrl'] as String? ?? authUser?.photoURL;
+
+      _isLoading = false;
+    });
+
+    print('✅ Updated user data from Firestore:');
+    print('   Name: $_userName');
+    print('   Phone: $_phoneNumber');
+    print('   Image URL: $_profileImageUrl');
+  }
+
+  void _updateUserDataFromAuth(User? user) {
+    setState(() {
+      _userName = user?.displayName ?? 'User';
+      _phoneNumber = user?.phoneNumber;
+      _profileImageUrl = user?.photoURL;
+      _isLoading = false;
+    });
+
+    print('ℹ️ Using auth data: $_userName');
+  }
+
+  // Force refresh method
+  Future<void> _refreshUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        // Force fetch from Firestore
+        final snapshot = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (snapshot.exists) {
+          _updateUserDataFromSnapshot(snapshot);
+        } else {
+          _updateUserDataFromAuth(user);
+        }
+      } else {
+        setState(() {
+          _userName = 'Guest User';
+          _profileImageUrl = null;
+          _phoneNumber = null;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error refreshing user data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _handleHelpSupportTap() {
+    print('Help & Support tapped');
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
+  }
+
+  void _handleAccountTap() {
+    print('My Account tapped');
+
+    // Navigate and then refresh when returning
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => ProfileEditScreen(
+              onProfileUpdated: (newImageUrl) {
+                // Immediately update image
+                if (newImageUrl != null) {
+                  setState(() {
+                    _profileImageUrl = newImageUrl;
+                  });
+                }
+                // Also trigger a refresh
+                _refreshUserData();
+              },
+            ),
+          ),
+        )
+        .then((value) {
+          // Always refresh when returning
+          _refreshUserData();
+        });
+  }
+
+  // Update the _loadLocalProfilePicture method if you still want to use it
   Future<String?> _loadLocalProfilePicture() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedBase64Image = prefs.getString('profile_picture_base64');
 
       if (savedBase64Image != null && savedBase64Image.isNotEmpty) {
-        print('✅ Loaded Base64 profile picture in Settings');
-        print('📊 Base64 string length: ${savedBase64Image.length}');
-        print(
-          '📊 First 50 chars: ${savedBase64Image.substring(0, min(50, savedBase64Image.length))}...',
-        );
         return savedBase64Image;
-      } else {
-        print('❌ No Base64 image found in SharedPreferences');
       }
       return null;
     } catch (e) {
       print('❌ Error loading Base64 profile picture: $e');
       return null;
     }
-  }
-
-  void _handleAccountTap() {
-    print('My Account tapped');
-    // Navigate to profile editing screen with callback
-    Navigator.of(context)
-        .push(
-          MaterialPageRoute(
-            builder: (context) => ProfileEditScreen(
-              onProfileUpdated: (newImageUrl) {
-                // Update the local state with new profile picture
-                setState(() {
-                  _profileImageUrl = newImageUrl;
-                });
-              },
-            ),
-          ),
-        )
-        .then((_) {
-          // Reload user data when returning from profile edit
-          _loadUserData();
-        });
   }
 
   @override
@@ -166,6 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: _SettingsContent(
         userName: _userName,
         profileImageUrl: _profileImageUrl,
+        phoneNumber: _phoneNumber,
         isLoading: _isLoading,
         onAccountTap: _handleAccountTap,
         onHelpSupportTap: _handleHelpSupportTap,
@@ -175,9 +237,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
+// ... rest of your _SettingsContent class remains the same ...
+
 class _SettingsContent extends StatelessWidget {
   final String userName;
   final String? profileImageUrl;
+  final String? phoneNumber;
   final bool isLoading;
   final VoidCallback onAccountTap;
   final VoidCallback onHelpSupportTap;
@@ -187,6 +252,7 @@ class _SettingsContent extends StatelessWidget {
     Key? key,
     required this.userName,
     required this.profileImageUrl,
+    this.phoneNumber,
     required this.isLoading,
     required this.onAccountTap,
     required this.onHelpSupportTap,
@@ -293,9 +359,9 @@ class _SettingsContent extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: ScreenUtils.responsiveFontSize(
                                     context,
-                                    mobile: 22.0, // Larger font
-                                    tablet: 24.0,
-                                    desktop: 26.0,
+                                    mobile: 16.0, // Larger font
+                                    tablet: 30.0,
+                                    desktop: 40.0,
                                   ),
                                   fontWeight: FontWeight.w700, // Bolder
                                   color: Theme.of(
@@ -317,13 +383,15 @@ class _SettingsContent extends StatelessWidget {
 
                         // Optional: Add user email or status
                         Text(
-                          'Account Settings',
+                          phoneNumber?.isNotEmpty == true
+                              ? phoneNumber!
+                              : 'Account Settings',
                           style: TextStyle(
                             fontSize: ScreenUtils.responsiveFontSize(
                               context,
-                              mobile: 14.0,
-                              tablet: 15.0,
-                              desktop: 16.0,
+                              mobile: 12.0,
+                              tablet: 20.0,
+                              desktop: 25.0,
                             ),
                             color: Theme.of(
                               context,
