@@ -2,7 +2,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -10,15 +9,16 @@ import '../../../../core/utils/screen_utils.dart';
 import '../view_models/location_view_model.dart';
 import 'package:jaan_broast/features/auth/presentation/view_models/auth_view_model.dart';
 import 'address_search_screen.dart';
+import 'package:jaan_broast/features/home/presentation/views/home_screen.dart';
 
 class LocationSetupScreen extends StatefulWidget {
   final bool isAutoLocation;
-  final bool preserveContactDetails; // Add this parameter
+  final bool preserveContactDetails;
 
   const LocationSetupScreen({
     Key? key,
     required this.isAutoLocation,
-    this.preserveContactDetails = false, // Default to false
+    this.preserveContactDetails = false,
   }) : super(key: key);
 
   @override
@@ -44,53 +44,54 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     'Office': 'Office Number',
   };
 
-  // Listener token for LocationViewModel
-  VoidCallback? _locationListener;
+  // Store the view model reference without using context
+  LocationViewModel? _cachedLocationViewModel;
+  bool _isDisposed = false;
+  bool _isNavigating = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeLocation();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isDisposed && widget.isAutoLocation) {
+        _initializeLocation();
+      }
+    });
     _loadSavedData();
   }
 
   void _initializeLocation() {
-    if (widget.isAutoLocation) {
-      // get view model and set up a listener so the UI updates when the VM completes
+    if (widget.isAutoLocation && !_isDisposed) {
       final locationViewModel = Provider.of<LocationViewModel>(
         context,
         listen: false,
       );
 
-      // If location was already set before navigation, pre-fill immediately
+      _cachedLocationViewModel = locationViewModel;
+
       if (locationViewModel.currentLocation != 'Quetta') {
         _addressController.text = locationViewModel.currentLocation;
       }
 
-      // Register a listener to update address when view model changes
-      _locationListener = () {
-        // Only update UI for auto-location flows
-        if (!mounted) return;
+      locationViewModel.addListener(_onLocationViewModelChanged);
+    }
+  }
 
-        final vm = Provider.of<LocationViewModel>(context, listen: false);
+  void _onLocationViewModelChanged() {
+    if (_isDisposed || !mounted || _cachedLocationViewModel == null) return;
+    if (!widget.isAutoLocation) return;
 
-        // If view model reports an address and it is not the default, fill the field
-        if (vm.isAutoLocation &&
-            vm.currentLocation.isNotEmpty &&
-            vm.currentLocation != 'Quetta') {
-          // Avoid unnecessary setState if controller already has the value
-          if (_addressController.text != vm.currentLocation) {
-            setState(() {
-              _addressController.text = vm.currentLocation;
-            });
-          }
+    final vm = _cachedLocationViewModel!;
+    if (vm.isAutoLocation &&
+        vm.currentLocation.isNotEmpty &&
+        vm.currentLocation != 'Quetta') {
+      if (_addressController.text != vm.currentLocation) {
+        if (mounted) {
+          setState(() {
+            _addressController.text = vm.currentLocation;
+          });
         }
-
-        // If there is an error, you may want to show it (optional)
-        // if (vm.error.isNotEmpty) { show a SnackBar or handle accordingly }
-      };
-
-      locationViewModel.addListener(_locationListener!);
+      }
     }
   }
 
@@ -107,35 +108,33 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
 
       if (userDoc.exists) {
         final userData = userDoc.data();
-
-        // Only load contact details if preserveContactDetails is true
         if (widget.preserveContactDetails) {
           final personalInfo =
               userData?['personalInfo'] as Map<String, dynamic>?;
           if (personalInfo != null) {
+            if (mounted) {
+              setState(() {
+                _nameController.text =
+                    personalInfo['fullName']?.toString() ?? '';
+                _phoneController.text =
+                    personalInfo['phoneNumber']?.toString() ?? '';
+              });
+            }
+          }
+        } else {
+          if (mounted) {
             setState(() {
-              _nameController.text = personalInfo['fullName']?.toString() ?? '';
-              _phoneController.text =
-                  personalInfo['phoneNumber']?.toString() ?? '';
+              _nameController.clear();
+              _phoneController.clear();
+              _landmarkController.clear();
+              _streetNumberController.clear();
+              _unitNumberController.clear();
+              _selectedAddressType = null;
+              if (!widget.isAutoLocation) {
+                _addressController.clear();
+              }
             });
           }
-
-          final address = userData?['address'] as Map<String, dynamic>?;
-          if (address != null) {}
-        } else {
-          setState(() {
-            _nameController.clear();
-            _phoneController.clear();
-            _landmarkController.clear();
-            _streetNumberController.clear();
-            _unitNumberController.clear();
-            _selectedAddressType = null;
-
-            // IMPORTANT: only clear address if NOT using auto-location flow
-            if (!widget.isAutoLocation) {
-              _addressController.clear();
-            }
-          });
         }
       }
     } catch (e) {
@@ -145,13 +144,9 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
 
   @override
   void dispose() {
-    // Remove listener if registered
-    if (_locationListener != null) {
-      final vm = Provider.of<LocationViewModel>(context, listen: false);
-      vm.removeListener(_locationListener!);
-      _locationListener = null;
-    }
-
+    _isDisposed = true;
+    print('🧹 Disposing LocationSetupScreen');
+    _cleanupLocationServices();
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
@@ -161,47 +156,159 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
     super.dispose();
   }
 
+  Future<void> _cleanupLocationServices() async {
+    try {
+      if (_cachedLocationViewModel != null) {
+        _cachedLocationViewModel!.removeListener(_onLocationViewModelChanged);
+        _cachedLocationViewModel = null;
+      }
+      // Add a small delay to ensure cleanup
+      await Future.delayed(const Duration(milliseconds: 100));
+    } catch (e) {
+      print('⚠️ Error cleaning up location services: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: AppBar(
-        title: const Text('Delivery Address'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: ScreenUtils.responsivePadding(
-            context,
-            mobile: 20,
-            tablet: 24,
-            desktop: 28,
+    return WillPopScope(
+      onWillPop: () async {
+        if (_isNavigating) return false;
+        await _handleBackAction();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.background,
+        appBar: AppBar(
+          title: const Text('Delivery Address'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (_isNavigating) return;
+              _handleBackAction();
+            },
           ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildAddressSection(),
-                const SizedBox(height: 20),
-                _buildAddressDetailsSection(),
-                const SizedBox(height: 20),
-                _buildPersonalInfoSection(),
-                const SizedBox(height: 30),
-                _buildSaveButton(),
-              ],
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: ScreenUtils.responsivePadding(
+              context,
+              mobile: 20,
+              tablet: 24,
+              desktop: 28,
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 24),
+                  _buildAddressSection(),
+                  const SizedBox(height: 20),
+                  _buildAddressDetailsSection(),
+                  const SizedBox(height: 20),
+                  _buildPersonalInfoSection(),
+                  const SizedBox(height: 30),
+                  _buildSaveButton(),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleBackAction() async {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
+    print('🔙 Handling back action');
+
+    if (!mounted) {
+      _isNavigating = false;
+      return;
+    }
+
+    // Stop location services FIRST
+    await _cleanupLocationServices();
+
+    // Wait for cleanup to complete
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!widget.preserveContactDetails) {
+      final shouldGoHome = await _showBackConfirmationDialog();
+      if (!shouldGoHome) {
+        _isNavigating = false;
+        return;
+      }
+    }
+
+    // Navigate to home
+    await _navigateToHome();
+    _isNavigating = false;
+  }
+
+  Future<bool> _showBackConfirmationDialog() async {
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('Skip Setup?'),
+            content: const Text(
+              'You need to complete your profile to place orders. '
+              'You can complete it later from your profile.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('CONTINUE SETUP'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('GO TO HOME'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _navigateToHome() async {
+    print('🚀 Navigating to home screen');
+
+    if (!mounted) {
+      print('⚠️ Widget not mounted');
+      return;
+    }
+
+    try {
+      // Use pushAndRemoveUntil to clear all routes
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+        (Route<dynamic> route) => false,
+      );
+
+      print('✅ Navigation successful');
+    } catch (e) {
+      print('❌ Navigation error: $e');
+
+      // Try alternative method - pushReplacementNamed
+      if (mounted) {
+        try {
+          Navigator.pushReplacementNamed(context, '/home');
+          print('✅ Alternative navigation successful');
+        } catch (e2) {
+          print('❌ Alternative navigation also failed: $e2');
+
+          // Last resort - pop current screen
+          if (mounted && Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        }
+      }
+    }
   }
 
   Widget _buildHeader() {
@@ -241,6 +348,17 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
   Widget _buildAddressSection() {
     return Consumer<LocationViewModel>(
       builder: (context, locationViewModel, child) {
+        if (_cachedLocationViewModel == null && widget.isAutoLocation) {
+          _cachedLocationViewModel = locationViewModel;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!_isDisposed && mounted && _cachedLocationViewModel != null) {
+              _cachedLocationViewModel!.addListener(
+                _onLocationViewModelChanged,
+              );
+            }
+          });
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -390,16 +508,14 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Address Type Section - FIXED OVERFLOW
+        // Address Type Section
         Column(
           children: [
-            // Always show the dropdown
             Container(
-              width: double.infinity, // Ensure it takes full width
+              width: double.infinity,
               child: DropdownButtonFormField<String>(
                 value: _selectedAddressType,
-                isExpanded:
-                    true, // This is the key fix - makes dropdown take full width
+                isExpanded: true,
                 decoration: InputDecoration(
                   hintText: 'Type (Flat, House, Suite, Office)',
                   border: OutlineInputBorder(
@@ -416,22 +532,20 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                 items: _addressTypes.map((String type) {
                   return DropdownMenuItem<String>(
                     value: type,
-                    child: Text(
-                      type,
-                      overflow: TextOverflow.ellipsis, // Prevent text overflow
-                    ),
+                    child: Text(type, overflow: TextOverflow.ellipsis),
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedAddressType = newValue;
-                    _unitNumberController.clear();
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _selectedAddressType = newValue;
+                      _unitNumberController.clear();
+                    });
+                  }
                 },
               ),
             ),
 
-            // Show unit number field only when address type is selected
             if (_selectedAddressType != null) ...[
               const SizedBox(height: 12),
               TextFormField(
@@ -447,10 +561,12 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.clear, size: 20),
                     onPressed: () {
-                      setState(() {
-                        _selectedAddressType = null;
-                        _unitNumberController.clear();
-                      });
+                      if (mounted) {
+                        setState(() {
+                          _selectedAddressType = null;
+                          _unitNumberController.clear();
+                        });
+                      }
                     },
                     tooltip: 'Clear type',
                   ),
@@ -718,10 +834,11 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
   }
 
   void _getCurrentLocationForAddress() async {
-    final locationViewModel = Provider.of<LocationViewModel>(
-      context,
-      listen: false,
-    );
+    if (!mounted) return;
+
+    final locationViewModel =
+        _cachedLocationViewModel ??
+        Provider.of<LocationViewModel>(context, listen: false);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -746,7 +863,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
           duration: const Duration(seconds: 2),
         ),
       );
-    } else {
+    } else if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -776,10 +893,9 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
             'Selected Address';
       });
 
-      final locationViewModel = Provider.of<LocationViewModel>(
-        context,
-        listen: false,
-      );
+      final locationViewModel =
+          _cachedLocationViewModel ??
+          Provider.of<LocationViewModel>(context, listen: false);
 
       if (selectedAddress['lat'] != null && selectedAddress['lon'] != null) {
         locationViewModel.updateLocationManually(
@@ -800,11 +916,12 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
   }
 
   void _saveAddress() {
+    if (!mounted || _formKey.currentState == null) return;
+
     if (_formKey.currentState!.validate()) {
-      final locationViewModel = Provider.of<LocationViewModel>(
-        context,
-        listen: false,
-      );
+      final locationViewModel =
+          _cachedLocationViewModel ??
+          Provider.of<LocationViewModel>(context, listen: false);
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
 
       // Prepare complete user data for saving
@@ -860,8 +977,8 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
         authViewModel.completeFirstLogin();
       }
 
-      // Navigate to home
-      Navigator.pushReplacementNamed(context, '/home');
+      // Navigate to home using the same method as back button
+      _navigateToHome();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
