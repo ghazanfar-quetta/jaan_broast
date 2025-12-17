@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/services/firebase_auth_service.dart';
 import '../../../../core/services/local_storage_service.dart';
 import '../../../../core/services/user_service.dart';
-import 'package:jaan_broast/core/services/fcm_token_manager.dart';
+import 'package:jaan_broast/core/services/fcm_service.dart'; // FIXED: Changed from fcm_token_manager.dart to fcm_service.dart
 import 'package:jaan_broast/core/services/auth_status_service.dart';
 
 class AuthViewModel with ChangeNotifier {
@@ -36,8 +36,8 @@ class AuthViewModel with ChangeNotifier {
       // Mark user as logged in
       await AuthStatusService.setUserLoggedIn(user.uid);
 
-      // Save FCM token
-      await FCMTokenManager.onUserLogin();
+      // Refresh FCM token (FIXED: Changed from FCMTokenManager.onUserLogin() to FCMService.refreshFCMToken())
+      await FCMService.refreshFCMToken(); // FIXED: This is the correct method name
 
       // Set logged in state
       await LocalStorageService.setIsLoggedIn(true);
@@ -230,7 +230,6 @@ class AuthViewModel with ChangeNotifier {
   }
 
   // Sign out
-  // Sign out
   Future<void> signOut() async {
     try {
       print('🔄 AuthViewModel: Starting sign out...');
@@ -242,9 +241,8 @@ class AuthViewModel with ChangeNotifier {
         await AuthStatusService.setUserLoggedOut(user.uid);
       }
 
-      // Remove FCM token (but keep it for promotional notifications)
-      // We'll only remove if user disables notifications in settings
-      // For logout, we just mark as logged out
+      // Note: We don't remove FCM token on logout to allow promotional notifications
+      // Token will be updated next time user logs in
 
       // Sign out from Firebase
       await _authService.signOut();

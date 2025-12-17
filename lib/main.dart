@@ -1,4 +1,4 @@
-import 'package:jaan_broast/core/services/fcm_token_manager.dart';
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -24,6 +24,7 @@ import 'features/cart/presentation/view_models/cart_view_model.dart';
 import 'features/orders/presentation/view_models/order_view_model.dart';
 import 'core/services/notification_service.dart';
 import 'core/utils/notification_navigator.dart';
+import 'core/services/fcm_service.dart'; // FIXED: Changed from fcm_token_manager.dart to fcm_service.dart
 
 // Global navigator key for notification navigation
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -89,10 +90,10 @@ void main() async {
     await NotificationService().initialize();
     print('✅ Notification Service initialized');
 
-    // Check and update FCM token if user is logged in
-    print('🔔 Checking FCM token status...');
-    await FCMTokenManager.checkAndUpdateToken();
-    print('✅ FCM token check complete');
+    // Initialize FCM Service (FIXED: Changed from FCMTokenManager to FCMService)
+    print('🔔 Initializing FCM Service...');
+    await FCMService.initialize(); // FIXED: This is the correct method name
+    print('✅ FCM Service initialized complete');
 
     print('🎉 All initialization complete!');
   } catch (e, stackTrace) {
