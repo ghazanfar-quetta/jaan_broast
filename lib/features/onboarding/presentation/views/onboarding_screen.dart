@@ -8,6 +8,8 @@ import 'onboarding_page1.dart';
 import 'onboarding_page2.dart';
 import 'onboarding_page3.dart';
 import 'package:jaan_broast/routes.dart';
+import 'package:jaan_broast/core/services/permission_service.dart';
+//import 'package:jaan_broast/features/permission/widgets/notification_permission_dialog.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -18,6 +20,7 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
+  bool _hasShownNotificationDialog = false;
 
   @override
   void initState() {
@@ -35,9 +38,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _navigateToAuth() async {
     await LocalStorageService.setHasSeenOnboarding(true);
-    // In _navigateToAuth() method
+
+    // Navigate immediately - NO permission request during onboarding
     if (mounted) {
       AppRoutes.pushReplacement(context, AppRoutes.auth);
+    }
+  }
+
+  // Add this method to request system permission
+  Future<void> _requestSystemNotificationPermission() async {
+    try {
+      print('🔔 Requesting system notification permission...');
+
+      // Request permission - this shows the SYSTEM dialog
+      final granted = await PermissionService.requestNotificationPermission();
+
+      // Save user's choice
+      await LocalStorageService.setOnboardingNotificationPreference(granted);
+      await LocalStorageService.setHasSetNotificationPreference(true);
+
+      if (granted) {
+        print('✅ User allowed notifications via system dialog');
+      } else {
+        print('⚠️ User declined notifications via system dialog');
+      }
+    } catch (e) {
+      print('❌ Error requesting notification permission: $e');
+      // Still save that we tried
+      await LocalStorageService.setHasSetNotificationPreference(true);
     }
   }
 

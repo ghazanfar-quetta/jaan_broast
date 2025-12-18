@@ -7,6 +7,10 @@ class LocalStorageService {
   static const String _permissionsAskedKey = 'permissions_asked';
   static const String _notificationPermissionAskedKey =
       'notification_permission_asked';
+  static const String _onboardingNotificationPreferenceKey =
+      'onboarding_notification_preference';
+  static const String _hasSetNotificationPreferenceKey =
+      'has_set_notification_preference';
 
   // Add these methods to your existing LocalStorageService class
 
@@ -89,5 +93,25 @@ class LocalStorageService {
     final currentFavorites = await getCachedFavorites();
     currentFavorites.remove(foodItemId);
     await prefs.setStringList('cached_favorites', currentFavorites);
+  }
+
+  static Future<void> setOnboardingNotificationPreference(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_onboardingNotificationPreferenceKey, value);
+  }
+
+  static Future<bool?> getOnboardingNotificationPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_onboardingNotificationPreferenceKey);
+  }
+
+  static Future<void> setHasSetNotificationPreference(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_hasSetNotificationPreferenceKey, value);
+  }
+
+  static Future<bool> getHasSetNotificationPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_hasSetNotificationPreferenceKey) ?? false;
   }
 }

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart'; // ADD THIS IMPORT
 import '../../../../core/services/user_service.dart';
 import 'package:jaan_broast/core/services/auth_status_service.dart';
 import 'package:jaan_broast/features/auth/presentation/view_models/auth_view_model.dart'; // ADD THIS IMPORT
+import 'package:jaan_broast/core/services/local_storage_service.dart';
 
 class SettingsViewModel with ChangeNotifier {
   bool _isDarkMode = false;
@@ -50,10 +51,77 @@ class SettingsViewModel with ChangeNotifier {
   Future<void> _loadNotificationPreference() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _notificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
+
+      // First check if user was ever asked for permission
+      final hasSetPreference =
+          await LocalStorageService.getHasSetNotificationPreference();
+      final onboardingPreference =
+          await LocalStorageService.getOnboardingNotificationPreference();
+
+      if (hasSetPreference && onboardingPreference != null) {
+        // User was asked and made a choice
+        _notificationsEnabled = onboardingPreference;
+        print(
+          '🔔 Using user\'s notification preference: $_notificationsEnabled',
+        );
+
+        // Also save to regular preferences for consistency
+        await prefs.setBool(_notificationsKey, onboardingPreference);
+      } else if (hasSetPreference && onboardingPreference == null) {
+        // User was asked but preference is null (edge case)
+        _notificationsEnabled = prefs.getBool(_notificationsKey) ?? false;
+        print('ℹ️ No preference saved, using false as default');
+      } else {
+        // User was never asked - default to FALSE (not true)
+        _notificationsEnabled = false;
+        print('ℹ️ User never asked for permission - default to FALSE');
+      }
+
+      // Sync with Firebase
+      await _syncWithFirebaseIfNeeded();
     } catch (e) {
       print('Error loading notification preference: $e');
-      _notificationsEnabled = true;
+      _notificationsEnabled = false; // Default to false on error
+    }
+  }
+
+  Future<void> _syncWithFirebaseIfNeeded() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          final firebaseSetting = userData?['notificationsEnabled'] as bool?;
+
+          // If Firebase has a different setting, update local storage
+          if (firebaseSetting != null &&
+              firebaseSetting != _notificationsEnabled) {
+            print(
+              '🔄 Syncing with Firebase notification setting: $firebaseSetting',
+            );
+            _notificationsEnabled = firebaseSetting;
+
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool(_notificationsKey, firebaseSetting);
+
+            // Also update onboarding preference if not set
+            final hasSetPreference =
+                await LocalStorageService.getHasSetNotificationPreference();
+            if (!hasSetPreference) {
+              await LocalStorageService.setOnboardingNotificationPreference(
+                firebaseSetting,
+              );
+              await LocalStorageService.setHasSetNotificationPreference(true);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error syncing with Firebase: $e');
     }
   }
 
@@ -86,15 +154,12 @@ class SettingsViewModel with ChangeNotifier {
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        // CRITICAL: Handle FCM token based on notification setting
         if (value) {
-          // Enable notifications - get and save token
-          await _enableNotifications();
+          // Enable notifications WITHOUT asking for permission
+          await _enableNotificationsSilently();
         } else {
-          // Disable notifications - remove token from Firestore AND unsubscribe
+          // Disable notifications
           await _disableNotifications();
-
-          // ADDITION: Also unsubscribe from topics if you're using them
           await _unsubscribeFromAllTopics();
         }
       }
@@ -105,31 +170,24 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  Future<void> _enableNotifications() async {
+  Future<void> _enableNotificationsSilently() async {
     try {
-      // First delete any existing token
-      await _firebaseMessaging.deleteToken();
-
-      // Request permission
-      final hasPermission = await checkNotificationPermission();
-      if (!hasPermission) {
-        final granted = await _requestNotificationPermission();
-        if (!granted) {
-          print('⚠️ Notification permission not granted');
-          return;
-        }
-      }
-
-      // Get new token
-      final token = await _firebaseMessaging.getToken();
-      if (token != null) {
-        final user = _auth.currentUser;
-        if (user != null) {
+      final user = _auth.currentUser;
+      if (user != null) {
+        // Just get the token if available, don't request permission
+        final token = await _firebaseMessaging.getToken();
+        if (token != null) {
           await _userService.saveFCMToken(user.uid, token);
-          print('✅ New FCM token saved: $token');
+          print('✅ FCM token saved: $token');
+        } else {
+          print('⚠️ No FCM token available (maybe no permission)');
+        }
 
-          // Subscribe to relevant topics
+        // Try to subscribe to topics (will fail silently if no permission)
+        try {
           await _subscribeToUserTopics(user.uid);
+        } catch (e) {
+          print('⚠️ Could not subscribe to topics: $e');
         }
       }
     } catch (e) {
@@ -375,6 +433,17 @@ class SettingsViewModel with ChangeNotifier {
           (route) => false,
         );
       }
+    }
+  }
+
+  Future<void> reloadNotificationPreference() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _notificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
+      notifyListeners();
+      print('🔄 SettingsViewModel reloaded: $_notificationsEnabled');
+    } catch (e) {
+      print('Error reloading notification preference: $e');
     }
   }
 }

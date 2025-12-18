@@ -7,6 +7,8 @@ import '../../../../core/services/local_storage_service.dart';
 import '../../../../core/services/user_service.dart';
 import 'package:jaan_broast/core/services/fcm_service.dart';
 import 'package:jaan_broast/core/services/auth_status_service.dart';
+import 'package:jaan_broast/core/services/permission_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthViewModel with ChangeNotifier {
   final FirebaseAuthService _authService = FirebaseAuthService();
@@ -34,21 +36,61 @@ class AuthViewModel with ChangeNotifier {
   // FCM Token Management after successful authentication
   Future<void> _handlePostAuthSuccess(User user) async {
     try {
-      // Create/update user document
+      // 1. Create/update user document
       await _createUserDocumentAfterAuth(user);
 
-      // Mark user as logged in
+      // 2. Mark user as logged in
       await AuthStatusService.setUserLoggedIn(user.uid);
 
-      // Refresh FCM token (FIXED: Changed from FCMTokenManager.onUserLogin() to FCMService.refreshFCMToken())
-      await FCMService.refreshFCMToken(); // FIXED: This is the correct method name
+      // 3. Request notification permission AFTER login (only once)
+      await _requestNotificationPermissionOnce(user);
 
-      // Set logged in state
+      // 4. Refresh FCM token
+      await FCMService.refreshFCMToken();
+
+      // 5. Set logged in state
       await LocalStorageService.setIsLoggedIn(true);
 
       print('✅ Auth success - User logged in: ${user.uid}');
     } catch (e) {
       print('⚠️ Post-auth processing error (non-critical): $e');
+    }
+  }
+
+  // Add this new method:
+  Future<void> _requestNotificationPermissionOnce(User user) async {
+    try {
+      final hasAsked =
+          await LocalStorageService.getHasSetNotificationPreference();
+
+      if (!hasAsked) {
+        print('🔔 First time login - requesting notification permission...');
+
+        final granted = await PermissionService.requestNotificationPermission();
+
+        // Save to LocalStorageService
+        await LocalStorageService.setOnboardingNotificationPreference(granted);
+        await LocalStorageService.setHasSetNotificationPreference(true);
+
+        // ✅ ADD THESE 3 LINES - Save to SharedPreferences (SettingsViewModel reads this)
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(
+          'notificationsEnabled',
+          granted,
+        ); // MUST MATCH SettingsViewModel key
+
+        // Update Firebase
+        await _userService.updateNotificationPreference(user.uid, granted);
+
+        if (granted) {
+          print('✅ User allowed notifications');
+        } else {
+          print('⚠️ User declined notifications');
+        }
+      }
+    } catch (e) {
+      print('❌ Error: $e');
+      await LocalStorageService.setHasSetNotificationPreference(true);
     }
   }
 

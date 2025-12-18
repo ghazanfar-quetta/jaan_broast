@@ -56,35 +56,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  // In SettingsScreen.dart, in the _setupUserDataListener method:
   void _setupUserDataListener() {
     final user = _auth.currentUser;
     if (user != null) {
-      // Listen to real-time updates from Firestore
       _userDataSubscription = _firestore
           .collection('users')
           .doc(user.uid)
           .snapshots()
-          .listen(
-            (DocumentSnapshot snapshot) {
-              if (snapshot.exists) {
-                _updateUserDataFromSnapshot(snapshot);
-              } else {
-                // If no document exists, use auth data
-                _updateUserDataFromAuth(user);
-              }
-            },
-            onError: (error) {
-              print('Error listening to user data: $error');
-              _updateUserDataFromAuth(user);
-            },
-          );
-    } else {
-      setState(() {
-        _userName = 'Guest User';
-        _profileImageUrl = null;
-        _phoneNumber = null;
-        _isLoading = false;
-      });
+          .listen((DocumentSnapshot snapshot) {
+            if (snapshot.exists) {
+              _updateUserDataFromSnapshot(snapshot);
+
+              // 🔄 RELOAD notification preference when user data changes
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final settingsViewModel = Provider.of<SettingsViewModel>(
+                  context,
+                  listen: false,
+                );
+                settingsViewModel.reloadNotificationPreference();
+              });
+            }
+          });
     }
   }
 

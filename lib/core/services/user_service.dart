@@ -2,14 +2,35 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../features/auth/domain/models/user_model.dart';
+import 'package:jaan_broast/core/services/local_storage_service.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Create or update user document in Firestore
   Future<void> createOrUpdateUserDocument(User user) async {
     try {
+      // Get notification preference from local storage
+      final notificationPreference =
+          await LocalStorageService.getOnboardingNotificationPreference();
+      final hasSetPreference =
+          await LocalStorageService.getHasSetNotificationPreference();
+
+      // Determine the notification setting
+      bool notificationsEnabled;
+
+      if (hasSetPreference && notificationPreference != null) {
+        // User has made a choice (Allow/Deny)
+        notificationsEnabled = notificationPreference;
+        print('✅ Using user\'s notification preference: $notificationsEnabled');
+      } else {
+        // User hasn't been asked yet - default to FALSE (safer)
+        notificationsEnabled = false;
+        print(
+          'ℹ️ User not asked yet - default to FALSE (will ask after login)',
+        );
+      }
+
       final userData = {
         'uid': user.uid,
         'email': user.email,
@@ -18,9 +39,9 @@ class UserService {
         'photoUrl': user.photoURL,
         'isAnonymous': user.isAnonymous,
         'isEmailVerified': user.emailVerified,
-        'notificationsEnabled': true,
+        'notificationsEnabled': notificationsEnabled,
         'fcmToken': null,
-        'isCurrentlyLoggedIn': true, // Default to true when creating
+        'isCurrentlyLoggedIn': true,
         'createdAt': FieldValue.serverTimestamp(),
         'lastActiveAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -30,29 +51,12 @@ class UserService {
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
 
       if (userDoc.exists) {
-        // Update existing document
+        // Update existing document - preserve existing notification preference
         final existingData = userDoc.data();
-
-        if (existingData != null) {
-          // Preserve existing preferences
-          if (existingData['notificationsEnabled'] != null) {
-            userData['notificationsEnabled'] =
-                existingData['notificationsEnabled'];
-          }
-
-          // Preserve login status if already set
-          if (existingData['isCurrentlyLoggedIn'] != null) {
-            userData['isCurrentlyLoggedIn'] =
-                existingData['isCurrentlyLoggedIn'];
-          } else {
-            // Set to true since user is logging in
-            userData['isCurrentlyLoggedIn'] = true;
-          }
-
-          // Preserve FCM token if exists
-          if (existingData['fcmToken'] != null) {
-            userData['fcmToken'] = existingData['fcmToken'];
-          }
+        if (existingData?['notificationsEnabled'] != null) {
+          // Keep existing preference
+          userData['notificationsEnabled'] =
+              existingData!['notificationsEnabled'] as bool;
         }
 
         await _firestore.collection('users').doc(user.uid).update({
@@ -62,7 +66,7 @@ class UserService {
         });
         print('✅ User document updated for: ${user.uid}');
       } else {
-        // Create new document - user is logging in, so set to true
+        // Create new document
         await _firestore.collection('users').doc(user.uid).set(userData);
         print('✅ User document created for: ${user.uid}');
       }
