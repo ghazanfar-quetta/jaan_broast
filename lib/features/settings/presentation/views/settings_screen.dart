@@ -45,7 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         context,
         listen: false,
       );
-      settingsViewModel.initializeNotificationSettings();
+      // settingsViewModel.initializeNotificationSettings();
     });
   }
 
@@ -660,6 +660,45 @@ class _SettingsContent extends StatelessWidget {
   Widget _buildNotificationTile(BuildContext context) {
     return Consumer<SettingsViewModel>(
       builder: (context, settingsViewModel, child) {
+        // Show loading if view model is still loading
+        if (settingsViewModel.isLoading) {
+          return ListTile(
+            leading: Icon(
+              Icons.notifications,
+              color: Theme.of(context).primaryColor.withOpacity(0.5),
+              size: ScreenUtils.responsiveValue(
+                context,
+                mobile: 22.0,
+                tablet: 24.0,
+                desktop: 26.0,
+              ),
+            ),
+            title: Text(
+              'Notifications',
+              style: TextStyle(
+                fontSize: ScreenUtils.responsiveFontSize(
+                  context,
+                  mobile: AppConstants.bodyTextSize.toDouble(),
+                  tablet: AppConstants.bodyTextSize.toDouble(),
+                  desktop: AppConstants.bodyTextSize.toDouble(),
+                ),
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+            trailing: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).primaryColor,
+                ),
+              ),
+            ),
+          );
+        }
+
         return ListTile(
           leading: Icon(
             settingsViewModel.notificationsEnabled

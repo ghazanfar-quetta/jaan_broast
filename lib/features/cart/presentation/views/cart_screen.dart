@@ -720,7 +720,7 @@ class _CartScreenState extends State<CartScreen>
                         style: TextStyle(
                           color: Theme.of(context).primaryColor,
                           fontWeight: FontWeight.bold,
-                          fontSize: 11,
+                          fontSize: 9,
                         ),
                       ),
                     ),
@@ -774,7 +774,7 @@ class _CartScreenState extends State<CartScreen>
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 11,
+                          fontSize: 9,
                         ),
                       ),
                     ),

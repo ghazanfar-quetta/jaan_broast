@@ -465,7 +465,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
             ),
           ),
 
-          const SizedBox(width: 16),
+          const SizedBox(width: 6),
 
           // Total Price and Add to Cart Button
           Expanded(
@@ -481,9 +481,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                   ),
                 ),
                 Text(
-                  'Rs${viewModel.calculateTotalPrice().toStringAsFixed(2)}',
+                  'Rs${viewModel.calculateTotalPrice().toStringAsFixed(0)}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    fontSize: 12,
                     color: Theme.of(context).primaryColor,
                   ),
                 ),
@@ -491,7 +492,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
             ),
           ),
 
-          const SizedBox(width: 16),
+          const SizedBox(width: 6),
 
           // Add to Cart Button
           ElevatedButton(

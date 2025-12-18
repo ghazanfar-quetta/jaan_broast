@@ -8,7 +8,6 @@ import 'package:provider/provider.dart'; // ADD THIS IMPORT
 import '../../../../core/services/user_service.dart';
 import 'package:jaan_broast/core/services/auth_status_service.dart';
 import 'package:jaan_broast/features/auth/presentation/view_models/auth_view_model.dart'; // ADD THIS IMPORT
-import 'package:jaan_broast/core/services/local_storage_service.dart';
 
 class SettingsViewModel with ChangeNotifier {
   bool _isDarkMode = false;
@@ -20,13 +19,22 @@ class SettingsViewModel with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final UserService _userService = UserService();
-
+  bool _isLoading = true;
   bool get isDarkMode => _isDarkMode;
   bool get notificationsEnabled => _notificationsEnabled;
-
+  bool get isLoading => _isLoading;
   SettingsViewModel() {
-    _loadDarkModePreference();
-    _loadNotificationPreference();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _loadPreferences();
+    _isLoading = false;
+  }
+
+  Future<void> _loadPreferences() async {
+    await _loadDarkModePreference();
+    await _loadNotificationPreference();
   }
 
   Future<void> _loadDarkModePreference() async {
@@ -41,48 +49,14 @@ class SettingsViewModel with ChangeNotifier {
 
   Future<void> _loadNotificationPreference() async {
     try {
-      // First check user's explicit choice from dialog
-      final userAllowed =
-          await LocalStorageService.getUserAllowedNotification();
-
-      // If user has made a choice, use that
-      final askedBefore =
-          await LocalStorageService.getNotificationPermissionAsked();
-
-      if (askedBefore) {
-        _notificationsEnabled = userAllowed;
-      } else {
-        // If user hasn't been asked yet (edge case), use SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        _notificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
-      }
-
+      final prefs = await SharedPreferences.getInstance();
+      _notificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
       notifyListeners();
-      await _syncNotificationWithFirebase();
+
+      // Don't sync with Firebase here - only load local preference
+      // await _syncNotificationWithFirebase(); // REMOVE THIS LINE
     } catch (e) {
       print('Error loading notification preference: $e');
-    }
-  }
-
-  // 2. Add a new method to check effective permission status:
-  Future<bool> getEffectiveNotificationStatus() async {
-    try {
-      // Check user's explicit choice first
-      final userAllowed =
-          await LocalStorageService.getUserAllowedNotification();
-      final askedBefore =
-          await LocalStorageService.getNotificationPermissionAsked();
-
-      // If user has been asked, use their choice
-      if (askedBefore) {
-        return userAllowed;
-      }
-
-      // If not asked yet (shouldn't happen), use system permission
-      return await checkNotificationPermission();
-    } catch (e) {
-      print('Error getting effective notification status: $e');
-      return false;
     }
   }
 
@@ -134,10 +108,6 @@ class SettingsViewModel with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Save to user's choice storage
-      await LocalStorageService.setUserAllowedNotification(value);
-
-      // Also save to SharedPreferences for backward compatibility
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_notificationsKey, value);
 
@@ -266,26 +236,12 @@ class SettingsViewModel with ChangeNotifier {
 
   Future<void> initializeNotificationSettings() async {
     try {
-      // Get user's effective choice
-      final userWantsNotifications = await getEffectiveNotificationStatus();
+      final hasPermission = await checkNotificationPermission();
 
-      // If user wants notifications but doesn't have permission, request it
-      if (userWantsNotifications) {
-        final hasPermission = await checkNotificationPermission();
-        if (!hasPermission) {
-          // Request permission if not granted
-          final granted = await _requestNotificationPermission();
-          if (!granted) {
-            // If permission denied, update our setting
-            await toggleNotifications(false);
-            return;
-          }
-        }
-      }
-
-      // Sync with current setting
-      if (userWantsNotifications != _notificationsEnabled) {
-        await toggleNotifications(userWantsNotifications);
+      if (hasPermission && !_notificationsEnabled) {
+        await toggleNotifications(true);
+      } else if (!hasPermission && _notificationsEnabled) {
+        await toggleNotifications(false);
       }
     } catch (e) {
       print('Error initializing notification settings: $e');

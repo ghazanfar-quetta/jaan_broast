@@ -1,7 +1,6 @@
 // lib/core/services/permission_service.dart
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
-import 'local_storage_service.dart';
 
 class PermissionService {
   // Request camera and photos permission for profile picture
@@ -90,24 +89,9 @@ class PermissionService {
   }
 
   // Request notification permission
-  // Update this method in PermissionService class
   static Future<bool> requestNotificationPermission() async {
-    try {
-      // Mark that we've asked
-      await LocalStorageService.setNotificationPermissionAsked(true);
-
-      final status = await Permission.notification.request();
-
-      // Save the result
-      await LocalStorageService.setNotificationPermissionStatus(
-        status.isGranted,
-      );
-
-      return status.isGranted;
-    } catch (e) {
-      print('Error requesting notification permission: $e');
-      return false;
-    }
+    final status = await Permission.notification.request();
+    return status.isGranted;
   }
 
   // Check if notification permission is granted
@@ -183,55 +167,5 @@ class PermissionService {
     final permission = await getDetailedLocationPermission();
     return permission == LocationPermission.always ||
         permission == LocationPermission.whileInUse;
-  }
-
-  // Add this method to your existing PermissionService class in permission_service.dart
-  // Update the shouldAskNotificationPermission method in PermissionService
-  static Future<bool> shouldAskNotificationPermission() async {
-    try {
-      final askedBefore =
-          await LocalStorageService.getNotificationPermissionAsked();
-      final currentStatus = await Permission.notification.status;
-
-      print(
-        '🔔 Should ask permission? Asked: $askedBefore, Status: $currentStatus',
-      );
-
-      // ALWAYS ask on first launch, regardless of current status
-      // This ensures the user sees our permission request UX
-      if (!askedBefore) {
-        print('🔔 First launch - showing permission dialog');
-        return true;
-      }
-
-      // If we've asked before, only ask again if permission was denied
-      return currentStatus.isDenied;
-    } catch (e) {
-      print('Error checking if should ask notification permission: $e');
-      return false;
-    }
-  }
-
-  // Add to PermissionService class
-  static Future<bool> shouldShowAsEnabledInSettings() async {
-    try {
-      // First check if user explicitly allowed/denied through our dialog
-      final userAllowed =
-          await LocalStorageService.getUserAllowedNotification();
-      final askedBefore =
-          await LocalStorageService.getNotificationPermissionAsked();
-
-      if (askedBefore) {
-        // User made a choice - respect it
-        return userAllowed;
-      }
-
-      // If not asked yet, check system permission
-      final systemPermission = await Permission.notification.status;
-      return systemPermission.isGranted;
-    } catch (e) {
-      print('Error checking settings notification status: $e');
-      return false;
-    }
   }
 }
