@@ -51,42 +51,9 @@ class SettingsViewModel with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       _notificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
-      notifyListeners();
-
-      // Don't sync with Firebase here - only load local preference
-      // await _syncNotificationWithFirebase(); // REMOVE THIS LINE
     } catch (e) {
       print('Error loading notification preference: $e');
-    }
-  }
-
-  Future<void> _syncNotificationWithFirebase() async {
-    try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        final userDoc = await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .get();
-
-        if (userDoc.exists) {
-          final userData = userDoc.data();
-          final notificationSetting =
-              userData?['notificationsEnabled'] as bool?;
-
-          if (notificationSetting != null &&
-              notificationSetting != _notificationsEnabled) {
-            _notificationsEnabled = notificationSetting;
-
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setBool(_notificationsKey, notificationSetting);
-
-            notifyListeners();
-          }
-        }
-      }
-    } catch (e) {
-      print('Error syncing notification with Firebase: $e');
+      _notificationsEnabled = true;
     }
   }
 
@@ -113,22 +80,22 @@ class SettingsViewModel with ChangeNotifier {
 
       final user = _auth.currentUser;
       if (user != null) {
+        // Update Firestore
         await _firestore.collection('users').doc(user.uid).update({
           'notificationsEnabled': value,
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
+        // CRITICAL: Handle FCM token based on notification setting
         if (value) {
+          // Enable notifications - get and save token
           await _enableNotifications();
         } else {
-          final isLoggedIn = await AuthStatusService.isUserLoggedIn(user.uid);
-          if (!isLoggedIn) {
-            await _disableNotifications();
-          } else {
-            print(
-              '⚠️ User is logged in, keeping FCM token for promotional notifications',
-            );
-          }
+          // Disable notifications - remove token from Firestore AND unsubscribe
+          await _disableNotifications();
+
+          // ADDITION: Also unsubscribe from topics if you're using them
+          await _unsubscribeFromAllTopics();
         }
       }
     } catch (e) {
@@ -140,6 +107,10 @@ class SettingsViewModel with ChangeNotifier {
 
   Future<void> _enableNotifications() async {
     try {
+      // First delete any existing token
+      await _firebaseMessaging.deleteToken();
+
+      // Request permission
       final hasPermission = await checkNotificationPermission();
       if (!hasPermission) {
         final granted = await _requestNotificationPermission();
@@ -149,12 +120,16 @@ class SettingsViewModel with ChangeNotifier {
         }
       }
 
-      final user = _auth.currentUser;
-      if (user != null) {
-        final token = await _firebaseMessaging.getToken();
-        if (token != null) {
+      // Get new token
+      final token = await _firebaseMessaging.getToken();
+      if (token != null) {
+        final user = _auth.currentUser;
+        if (user != null) {
           await _userService.saveFCMToken(user.uid, token);
-          print('✅ FCM token saved after enabling notifications: $token');
+          print('✅ New FCM token saved: $token');
+
+          // Subscribe to relevant topics
+          await _subscribeToUserTopics(user.uid);
         }
       }
     } catch (e) {
@@ -162,15 +137,61 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
+  // Add this method
+  Future<void> _subscribeToUserTopics(String userId) async {
+    try {
+      // Subscribe to general topics
+      await _firebaseMessaging.subscribeToTopic('all_users');
+      await _firebaseMessaging.subscribeToTopic('order_updates');
+
+      // Subscribe to user-specific topic
+      await _firebaseMessaging.subscribeToTopic('user_$userId');
+
+      print('✅ Subscribed to topics for user: $userId');
+    } catch (e) {
+      print('❌ Error subscribing to topics: $e');
+    }
+  }
+
   Future<void> _disableNotifications() async {
     try {
       final user = _auth.currentUser;
       if (user != null) {
+        // 1. Remove FCM token from your Firestore
         await _userService.removeFCMToken(user.uid);
-        print('✅ FCM token removed after disabling notifications');
+
+        // 2. Delete the FCM token from Firebase instance (IMPORTANT!)
+        await _firebaseMessaging.deleteToken();
+
+        // 3. Unsubscribe from all topics
+        await _firebaseMessaging.unsubscribeFromTopic('all_users');
+        await _firebaseMessaging.unsubscribeFromTopic('user_${user.uid}');
+
+        print('✅ FCM token deleted and unsubscribed from all topics');
       }
     } catch (e) {
       print('❌ Error disabling notifications: $e');
+    }
+  }
+
+  // Add this method
+  Future<void> _unsubscribeFromAllTopics() async {
+    try {
+      // Unsubscribe from common topics
+      final topics = ['all_users', 'promotions', 'order_updates'];
+      for (final topic in topics) {
+        await _firebaseMessaging.unsubscribeFromTopic(topic);
+      }
+
+      // Unsubscribe from user-specific topic
+      final user = _auth.currentUser;
+      if (user != null) {
+        await _firebaseMessaging.unsubscribeFromTopic('user_${user.uid}');
+      }
+
+      print('✅ Unsubscribed from all topics');
+    } catch (e) {
+      print('❌ Error unsubscribing from topics: $e');
     }
   }
 
@@ -237,14 +258,59 @@ class SettingsViewModel with ChangeNotifier {
   Future<void> initializeNotificationSettings() async {
     try {
       final hasPermission = await checkNotificationPermission();
+      final user = _auth.currentUser;
 
-      if (hasPermission && !_notificationsEnabled) {
-        await toggleNotifications(true);
-      } else if (!hasPermission && _notificationsEnabled) {
+      if (user != null) {
+        // Get current Firestore setting
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          final firebaseSetting = userData?['notificationsEnabled'] as bool?;
+
+          // Sync with local setting
+          if (firebaseSetting != null &&
+              firebaseSetting != _notificationsEnabled) {
+            print('🔄 Syncing notification setting with Firebase');
+            await toggleNotifications(firebaseSetting);
+          }
+        }
+      }
+
+      // If no permission, ensure notifications are off
+      if (!hasPermission && _notificationsEnabled) {
+        print('⚠️ No notification permission, disabling notifications');
         await toggleNotifications(false);
       }
     } catch (e) {
       print('Error initializing notification settings: $e');
+    }
+  }
+
+  Future<bool> areNotificationsActuallyDisabled() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return true;
+
+      // Check Firestore
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) return true;
+
+      final userData = userDoc.data();
+      final notificationsEnabled = userData?['notificationsEnabled'] as bool?;
+
+      // Check local preference
+      final prefs = await SharedPreferences.getInstance();
+      final localEnabled = prefs.getBool(_notificationsKey) ?? true;
+
+      // Both should be false for notifications to be actually disabled
+      return (notificationsEnabled == false) && (localEnabled == false);
+    } catch (e) {
+      print('Error checking notification status: $e');
+      return false;
     }
   }
 

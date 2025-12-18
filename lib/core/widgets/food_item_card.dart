@@ -49,7 +49,7 @@ class FoodItemCard extends StatelessWidget {
             Stack(
               children: [
                 Container(
-                  height: 120,
+                  height: 100,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     borderRadius: const BorderRadius.only(
@@ -78,6 +78,7 @@ class FoodItemCard extends StatelessWidget {
                       name,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -91,6 +92,7 @@ class FoodItemCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: Theme.of(context).primaryColor,
                         fontWeight: FontWeight.bold,
+                        fontSize: 11,
                       ),
                     ),
 
