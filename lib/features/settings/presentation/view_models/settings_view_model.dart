@@ -139,6 +139,30 @@ class SettingsViewModel with ChangeNotifier {
   Future<void> toggleNotifications(bool value) async {
     if (_notificationsEnabled == value) return;
 
+    // If trying to enable notifications
+    if (value) {
+      final hasPermission = await checkNotificationPermission();
+
+      if (!hasPermission) {
+        print('🔔 No permission - requesting notification permission...');
+
+        // Request permission (this shows system dialog)
+        final granted = await requestNotificationPermission();
+
+        if (!granted) {
+          print('❌ User denied permission - keeping toggle OFF');
+          // Don't change the toggle - keep it OFF
+          return;
+        }
+
+        print('✅ Permission granted - proceeding with enabling notifications');
+      }
+    }
+
+    // Only reach here if:
+    // 1. We're turning OFF notifications, OR
+    // 2. We're turning ON and have permission
+
     _notificationsEnabled = value;
     notifyListeners();
 
@@ -148,17 +172,15 @@ class SettingsViewModel with ChangeNotifier {
 
       final user = _auth.currentUser;
       if (user != null) {
-        // Update Firestore
         await _firestore.collection('users').doc(user.uid).update({
           'notificationsEnabled': value,
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
         if (value) {
-          // Enable notifications WITHOUT asking for permission
-          await _enableNotificationsSilently();
+          // Now enable notifications (we have permission)
+          await _enableNotificationsWithToken();
         } else {
-          // Disable notifications
           await _disableNotifications();
           await _unsubscribeFromAllTopics();
         }
@@ -170,20 +192,19 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  Future<void> _enableNotificationsSilently() async {
+  // Update the enable method to actually get/save token
+  Future<void> _enableNotificationsWithToken() async {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        // Just get the token if available, don't request permission
+        // Get FCM token (should work since we have permission)
         final token = await _firebaseMessaging.getToken();
         if (token != null) {
           await _userService.saveFCMToken(user.uid, token);
           print('✅ FCM token saved: $token');
-        } else {
-          print('⚠️ No FCM token available (maybe no permission)');
         }
 
-        // Try to subscribe to topics (will fail silently if no permission)
+        // Subscribe to topics
         try {
           await _subscribeToUserTopics(user.uid);
         } catch (e) {
@@ -253,7 +274,7 @@ class SettingsViewModel with ChangeNotifier {
     }
   }
 
-  Future<bool> _requestNotificationPermission() async {
+  Future<bool> requestNotificationPermission() async {
     try {
       final settings = await _firebaseMessaging.requestPermission(
         alert: true,
