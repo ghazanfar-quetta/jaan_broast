@@ -152,9 +152,9 @@ We encourage you to review this Privacy Policy periodically to stay informed abo
             content: '''
 If you have any questions or concerns about this Privacy Policy or our data practices, please contact us:
 
-• Email: privacy@jaanbroast.com
-• Phone: +92-XXX-XXXXXXX
-• Address: [Your Business Address]
+• Email: jaanbroast42@gmail.com
+• Phone: +92-311-1786550
+• Address: Prince road, Quetta, Pakistan
 • In-app: Through the Help & Support section
 
 We will respond to your inquiry within 48 hours.
