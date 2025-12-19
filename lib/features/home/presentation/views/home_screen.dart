@@ -29,6 +29,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
+  bool _isGuest = true;
+  bool _guestCheckComplete = false;
   late HomeViewModel _viewModel;
   int _currentIndex = 0; // Track current bottom nav index
   bool _isInitialized = false;
@@ -49,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
       activeIcon: Icon(Icons.favorite),
       label: 'Favorites',
     ),
-
     const BottomNavigationBarItem(
       icon: Icon(Icons.history_outlined),
       activeIcon: Icon(Icons.history),
@@ -65,11 +66,31 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    print('🚀 HomeScreen initState called');
     // Initialize after the first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      print('🎯 HomeScreen first frame callback');
       _viewModel = Provider.of<HomeViewModel>(context, listen: false);
-      _initializeData();
-      _loadUserAddress(); // Load address from Firestore
+
+      // Check if user is guest from Firestore
+      _isGuest = await _isGuestUser();
+      _guestCheckComplete = true;
+
+      print('🔍 Guest check complete - isGuest: $_isGuest');
+      print('🔍 Current index: $_currentIndex');
+
+      // If guest and trying to access Settings, reset to Home
+      if (_isGuest && _currentIndex == 3) {
+        print('🚫 Guest user at Settings index - resetting to Home');
+        setState(() {
+          _currentIndex = 0;
+        });
+      }
+
+      await _initializeData();
+      await _loadUserAddress();
+
       setState(() {
         _isInitialized = true;
       });
@@ -149,6 +170,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    print(
+      '🏠 HomeScreen building - User: ${currentUser?.uid ?? "null"}, Anonymous: ${currentUser?.isAnonymous ?? true}',
+    );
+
+    // Safety check on every build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _guestCheckComplete && _isGuest && _currentIndex == 3) {
+        print('⚠️ SAFETY CHECK: Guest user at Settings index, resetting...');
+        setState(() {
+          _currentIndex = 0;
+        });
+
+        // Also show dialog
+        _showSettingsLoginDialog();
+      }
+    });
+
     if (!_isInitialized) {
       return Scaffold(
         backgroundColor: Theme.of(context).colorScheme.background,
@@ -235,16 +274,44 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCurrentScreen() {
+    // If initialization not complete, show loading
+    if (!_isInitialized || !_guestCheckComplete) {
+      return _buildLoadingState();
+    }
+
+    // DEBUG
+    print('🏠 Building screen - Index: $_currentIndex, IsGuest: $_isGuest');
+
+    // Handle Settings tab
+    if (_currentIndex == 3) {
+      if (_isGuest) {
+        print('🚫 Building Home instead of Settings for guest');
+
+        // Show login dialog
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _showSettingsLoginDialog();
+          }
+        });
+
+        // Return Home screen content
+        return _buildHomeContent();
+      } else {
+        // User is not guest, show Settings
+        return const SettingsScreen();
+      }
+    }
+
+    // Handle other tabs normally
     switch (_currentIndex) {
       case 0:
         return _buildHomeContent();
       case 1:
         return const FavoritesScreen();
       case 2:
-        return const OrderHistoryScreen(); // Add Order History at index 2
-      case 3:
+        return const OrderHistoryScreen();
       default:
-        return _buildPlaceholderScreen(); // Settings remains placeholder
+        return _buildHomeContent();
     }
   }
 
@@ -332,30 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          // Check if trying to navigate to Favorites (index 1)
-          if (index == 1) {
-            // Favorites is at index 1
-            // In home_screen.dart - Replace the try-catch block with:
-            try {
-              // Use the ViewModel to check login and show prompt if needed
-              if (!context.read<HomeViewModel>().checkLoginAndShowPrompt(
-                context,
-                message: 'Please log in to use favorites',
-              )) {
-                return; // Don't change the index or navigate
-              }
-            } catch (e) {
-              // Handle any errors
-              print('Error checking login: $e');
-            }
-          }
-
-          // If user is properly logged in or it's not favorites tab, proceed with navigation
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: _handleBottomNavTap,
         items: _bottomNavItems,
         type: BottomNavigationBarType.fixed,
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -375,6 +419,85 @@ class _HomeScreenState extends State<HomeScreen> {
         showUnselectedLabels: true,
       ),
     );
+  }
+
+  Future<void> _showSettingsLoginDialog() async {
+    print('🔄 Showing login dialog for Settings access');
+
+    // Reset to Home first
+    if (mounted && _currentIndex == 3) {
+      setState(() {
+        _currentIndex = 0;
+      });
+    }
+
+    final shouldLogin = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Required'),
+        content: const Text('You need to be logged in to access settings.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Log In'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogin == true && context.mounted) {
+      print('🚀 Navigating to auth screen');
+      // Navigate to sign in screen
+      Navigator.pushNamed(context, '/auth');
+    } else {
+      print('❌ User cancelled login');
+    }
+  }
+
+  void _handleBottomNavTap(int index) async {
+    // Check guest status
+    final isGuest = await _isGuestUser();
+
+    print('👆 BottomNav tapped - Index: $index, IsGuest: $isGuest');
+
+    // Check if trying to navigate to Favorites (index 1)
+    if (index == 1) {
+      if (isGuest) {
+        print('🚫 Blocking guest from Favorites');
+        try {
+          if (!context.read<HomeViewModel>().checkLoginAndShowPrompt(
+            context,
+            message: 'Please log in to use favorites',
+          )) {
+            return; // Don't change the index or navigate
+          }
+        } catch (e) {
+          print('Error checking login: $e');
+          return;
+        }
+      }
+    }
+
+    // Check if trying to navigate to Settings (index 3)
+    if (index == 3) {
+      if (isGuest) {
+        print('🚫 Blocking guest from Settings');
+        _showSettingsLoginDialog();
+        return; // Don't change index at all
+      }
+    }
+
+    // If user is properly logged in or it's not favorites/settings tab, proceed with navigation
+    print('✅ Allowing navigation to index $index');
+    if (mounted) {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
   }
 
   Widget _buildLoadingState() {
@@ -491,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             // In the _buildErrorState method, change the ElevatedButton:
             ElevatedButton(
-              onPressed: () => _viewModel.refreshData,
+              onPressed: () => _viewModel.refreshData(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
@@ -959,6 +1082,30 @@ class _HomeScreenState extends State<HomeScreen> {
         action: SnackBarAction(label: 'View Cart', onPressed: _viewCart),
       ),
     );
+  }
+
+  // Add this method to your _HomeScreenState class
+  Future<bool> _isGuestUser() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return true;
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        // Check the isAnonymous field in Firestore
+        final isAnonymousInFirestore = userData?['isAnonymous'] as bool?;
+        return isAnonymousInFirestore == true;
+      }
+      return true; // No user document = guest
+    } catch (e) {
+      print('Error checking guest status: $e');
+      return true; // Assume guest on error
+    }
   }
 
   @override
