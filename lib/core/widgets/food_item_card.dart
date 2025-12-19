@@ -49,7 +49,7 @@ class FoodItemCard extends StatelessWidget {
                 Container(
                   height: ScreenUtils.responsiveValue(
                     context,
-                    mobile: 150.0,
+                    mobile: 140.0,
                     tablet: 200.0,
                     desktop: 300.0,
                   ),
@@ -90,7 +90,7 @@ class FoodItemCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: ScreenUtils.responsiveValue(
                           context,
-                          mobile: 12.0,
+                          mobile: 11.0,
                           tablet: 14.0,
                           desktop: 16.0,
                         ),
@@ -116,14 +116,14 @@ class FoodItemCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: ScreenUtils.responsiveValue(
                           context,
-                          mobile: 11.0,
+                          mobile: 10.0,
                           tablet: 13.0,
                           desktop: 15.0,
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 0),
 
                     // Order Button with Favorite Icon - Responsive
                     Row(
@@ -137,17 +137,18 @@ class FoodItemCard extends StatelessWidget {
                             tablet: 100.0,
                             desktop: 120.0,
                           ),
-                          child: ElevatedButton(
+                          child: OutlinedButton(
                             onPressed: () => _handleOrder(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).primaryColor,
-                              foregroundColor: Theme.of(
-                                context,
-                              ).colorScheme.onPrimary,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Theme.of(context).primaryColor,
+                              side: BorderSide(
+                                color: Theme.of(context).primaryColor,
+                                width: 1.0,
+                              ),
                               padding: EdgeInsets.symmetric(
                                 vertical: ScreenUtils.responsiveValue(
                                   context,
-                                  mobile: 4.0,
+                                  mobile: 0.0,
                                   tablet: 8.0,
                                   desktop: 12.0,
                                 ),
@@ -159,6 +160,7 @@ class FoodItemCard extends StatelessWidget {
                                 ),
                               ),
                               minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
                                   ScreenUtils.responsiveValue(
@@ -171,15 +173,16 @@ class FoodItemCard extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              'Order',
+                              'Order Now',
                               style: TextStyle(
                                 fontSize: ScreenUtils.responsiveValue(
                                   context,
-                                  mobile: 11.0,
+                                  mobile: 10.0,
                                   tablet: 13.0,
                                   desktop: 15.0,
                                 ),
                                 fontWeight: FontWeight.w600,
+                                color: Theme.of(context).primaryColor,
                               ),
                             ),
                           ),
@@ -191,13 +194,13 @@ class FoodItemCard extends StatelessWidget {
                           child: Container(
                             width: ScreenUtils.responsiveValue(
                               context,
-                              mobile: 32.0,
+                              mobile: 26.0,
                               tablet: 36.0,
                               desktop: 40.0,
                             ),
                             height: ScreenUtils.responsiveValue(
                               context,
-                              mobile: 32.0,
+                              mobile: 26.0,
                               tablet: 36.0,
                               desktop: 40.0,
                             ),
@@ -216,7 +219,7 @@ class FoodItemCard extends StatelessWidget {
                                       ).primaryColor.withOpacity(0.3),
                                 width: ScreenUtils.responsiveValue(
                                   context,
-                                  mobile: 1.5,
+                                  mobile: 1.2,
                                   tablet: 1.8,
                                   desktop: 2.0,
                                 ),

@@ -306,7 +306,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
               margin: EdgeInsets.symmetric(
                 vertical: ScreenUtils.responsiveValue(
                   context,
-                  mobile: 12.0,
+                  mobile: 6.0,
                   tablet: 14.0,
                   desktop: 16.0,
                 ),
@@ -428,7 +428,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                           SizedBox(
                             height: ScreenUtils.responsiveValue(
                               context,
-                              mobile: 8.0,
+                              mobile: 0.0,
                               tablet: 10.0,
                               desktop: 12.0,
                             ),
@@ -519,7 +519,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                           SizedBox(
                             height: ScreenUtils.responsiveValue(
                               context,
-                              mobile: 20.0,
+                              mobile: 16.0,
                               tablet: 24.0,
                               desktop: 28.0,
                             ),
@@ -635,8 +635,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
         SizedBox(
           height: ScreenUtils.responsiveValue(
             context,
-            mobile: 12.0,
-            tablet: 14.0,
+            mobile: 0.0,
+            tablet: 8.0,
             desktop: 16.0,
           ),
         ),
@@ -805,15 +805,15 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
       padding: EdgeInsets.symmetric(
         horizontal: ScreenUtils.responsiveValue(
           context,
-          mobile: AppConstants.paddingLarge,
-          tablet: AppConstants.paddingLarge * 1.5,
+          mobile: AppConstants.paddingSmall,
+          tablet: AppConstants.paddingLarge,
           desktop: AppConstants.paddingLarge * 2,
         ),
         vertical: ScreenUtils.responsiveValue(
           context,
-          mobile: AppConstants.paddingMedium,
-          tablet: AppConstants.paddingMedium * 1.2,
-          desktop: AppConstants.paddingMedium * 1.5,
+          mobile: AppConstants.paddingSmall,
+          tablet: AppConstants.paddingMedium,
+          desktop: AppConstants.paddingLarge,
         ),
       ),
       decoration: BoxDecoration(
@@ -879,7 +879,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                   padding: EdgeInsets.all(
                     ScreenUtils.responsiveValue(
                       context,
-                      mobile: 8.0,
+                      mobile: 4.0,
                       tablet: 10.0,
                       desktop: 12.0,
                     ),
@@ -889,9 +889,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                 Container(
                   width: ScreenUtils.responsiveValue(
                     context,
-                    mobile: 40.0,
-                    tablet: 48.0,
-                    desktop: 56.0,
+                    mobile: 10.0,
+                    tablet: 30.0,
+                    desktop: 50.0,
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -900,7 +900,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: ScreenUtils.responsiveValue(
                         context,
-                        mobile: 16.0,
+                        mobile: 12.0,
                         tablet: 18.0,
                         desktop: 20.0,
                       ),
@@ -919,7 +919,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                   padding: EdgeInsets.all(
                     ScreenUtils.responsiveValue(
                       context,
-                      mobile: 8.0,
+                      mobile: 4.0,
                       tablet: 10.0,
                       desktop: 12.0,
                     ),
@@ -942,7 +942,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
           // Total Price and Add to Cart Button
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   'Total',
@@ -952,9 +952,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                     ).textTheme.bodySmall?.color?.withOpacity(0.7),
                     fontSize: ScreenUtils.responsiveValue(
                       context,
-                      mobile: 12.0,
-                      tablet: 14.0,
-                      desktop: 16.0,
+                      mobile: 14.0,
+                      tablet: 18.0,
+                      desktop: 20.0,
                     ),
                   ),
                 ),
@@ -965,8 +965,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                     fontSize: ScreenUtils.responsiveValue(
                       context,
                       mobile: 16.0,
-                      tablet: 18.0,
-                      desktop: 20.0,
+                      tablet: 20.0,
+                      desktop: 24.0,
                     ),
                     color: Theme.of(context).primaryColor,
                   ),
@@ -995,15 +995,15 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
               padding: EdgeInsets.symmetric(
                 horizontal: ScreenUtils.responsiveValue(
                   context,
-                  mobile: AppConstants.paddingLarge,
-                  tablet: AppConstants.paddingLarge * 1.5,
+                  mobile: AppConstants.paddingSmall,
+                  tablet: AppConstants.paddingLarge,
                   desktop: AppConstants.paddingLarge * 2,
                 ),
                 vertical: ScreenUtils.responsiveValue(
                   context,
-                  mobile: AppConstants.paddingMedium,
-                  tablet: AppConstants.paddingMedium * 1.2,
-                  desktop: AppConstants.paddingMedium * 1.5,
+                  mobile: AppConstants.paddingSmall,
+                  tablet: AppConstants.paddingMedium,
+                  desktop: AppConstants.paddingLarge,
                 ),
               ),
               shape: RoundedRectangleBorder(
@@ -1023,7 +1023,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
               style: TextStyle(
                 fontSize: ScreenUtils.responsiveValue(
                   context,
-                  mobile: 14.0,
+                  mobile: 12.0,
                   tablet: 16.0,
                   desktop: 18.0,
                 ),
