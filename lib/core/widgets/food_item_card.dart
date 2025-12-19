@@ -7,8 +7,6 @@ import '../../features/home/domain/models/food_item.dart';
 import 'package:jaan_broast/features/cart/presentation/views/cart_screen.dart';
 import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 import '../constants/button_styles.dart';
-import 'package:jaan_broast/features/home/domain/models/food_item.dart';
-import 'package:jaan_broast/features/cart/presentation/view_models/cart_view_model.dart';
 
 class FoodItemCard extends StatelessWidget {
   final String name;
@@ -17,7 +15,7 @@ class FoodItemCard extends StatelessWidget {
   final bool isFavorite;
   final VoidCallback onTap;
   final VoidCallback onToggleFavorite;
-  final FoodItem? foodItem; // Add this optional parameter
+  final FoodItem? foodItem;
 
   const FoodItemCard({
     super.key,
@@ -27,7 +25,7 @@ class FoodItemCard extends StatelessWidget {
     required this.isFavorite,
     required this.onTap,
     required this.onToggleFavorite,
-    this.foodItem, // Add this
+    this.foodItem,
   });
 
   @override
@@ -45,11 +43,16 @@ class FoodItemCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Section
+            // Responsive Image Section
             Stack(
               children: [
                 Container(
-                  height: 100,
+                  height: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 150.0,
+                    tablet: 200.0,
+                    desktop: 300.0,
+                  ),
                   width: double.infinity,
                   decoration: BoxDecoration(
                     borderRadius: const BorderRadius.only(
@@ -68,23 +71,42 @@ class FoodItemCard extends StatelessWidget {
             // Content Section
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(5),
+                padding: EdgeInsets.all(
+                  ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 4.0,
+                    tablet: 8.0,
+                    desktop: 12.0,
+                  ),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    // Food Name
+                    // Responsive Food Name
                     Text(
                       name,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: ScreenUtils.responsiveValue(
+                          context,
+                          mobile: 12.0,
+                          tablet: 14.0,
+                          desktop: 16.0,
+                        ),
                       ),
-                      maxLines: 2,
+                      maxLines: ScreenUtils.responsiveValue(
+                        context,
+                        mobile: 2,
+                        tablet: 2,
+                        desktop: 1,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
+
                     const Spacer(),
-                    // Price
+
+                    // Responsive Price
                     Text(
                       portions.length <= 1
                           ? 'Rs. ${basePrice.toStringAsFixed(0)}'
@@ -92,17 +114,29 @@ class FoodItemCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: Theme.of(context).primaryColor,
                         fontWeight: FontWeight.bold,
-                        fontSize: 11,
+                        fontSize: ScreenUtils.responsiveValue(
+                          context,
+                          mobile: 11.0,
+                          tablet: 13.0,
+                          desktop: 15.0,
+                        ),
                       ),
                     ),
 
-                    // Order Button with Favorite Icon - Primary Color Scheme
+                    const SizedBox(height: 4),
+
+                    // Order Button with Favorite Icon - Responsive
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Order Button
+                        // Responsive Order Button
                         SizedBox(
-                          width: 80,
+                          width: ScreenUtils.responsiveValue(
+                            context,
+                            mobile: 80.0,
+                            tablet: 100.0,
+                            desktop: 120.0,
+                          ),
                           child: ElevatedButton(
                             onPressed: () => _handleOrder(context),
                             style: ElevatedButton.styleFrom(
@@ -110,35 +144,66 @@ class FoodItemCard extends StatelessWidget {
                               foregroundColor: Theme.of(
                                 context,
                               ).colorScheme.onPrimary,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 4,
+                              padding: EdgeInsets.symmetric(
+                                vertical: ScreenUtils.responsiveValue(
+                                  context,
+                                  mobile: 4.0,
+                                  tablet: 8.0,
+                                  desktop: 12.0,
+                                ),
+                                horizontal: ScreenUtils.responsiveValue(
+                                  context,
+                                  mobile: 4.0,
+                                  tablet: 8.0,
+                                  desktop: 12.0,
+                                ),
                               ),
-                              minimumSize: const Size(0, 28),
+                              minimumSize: Size.zero,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(
+                                  ScreenUtils.responsiveValue(
+                                    context,
+                                    mobile: 6.0,
+                                    tablet: 8.0,
+                                    desktop: 10.0,
+                                  ),
+                                ),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Order',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: ScreenUtils.responsiveValue(
+                                  context,
+                                  mobile: 11.0,
+                                  tablet: 13.0,
+                                  desktop: 15.0,
+                                ),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                         ),
 
-                        // Round Favorite Icon
+                        // Responsive Favorite Icon
                         GestureDetector(
                           onTap: onToggleFavorite,
                           child: Container(
-                            width: 32, // Increased size
-                            height: 32,
+                            width: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 32.0,
+                              tablet: 36.0,
+                              desktop: 40.0,
+                            ),
+                            height: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 32.0,
+                              tablet: 36.0,
+                              desktop: 40.0,
+                            ),
                             decoration: BoxDecoration(
                               color: isFavorite
-                                  ? Theme.of(context)
-                                        .primaryColor // Using primary color
+                                  ? Theme.of(context).primaryColor
                                   : Theme.of(
                                       context,
                                     ).primaryColor.withOpacity(0.1),
@@ -149,7 +214,12 @@ class FoodItemCard extends StatelessWidget {
                                     : Theme.of(
                                         context,
                                       ).primaryColor.withOpacity(0.3),
-                                width: 1.5,
+                                width: ScreenUtils.responsiveValue(
+                                  context,
+                                  mobile: 1.5,
+                                  tablet: 1.8,
+                                  desktop: 2.0,
+                                ),
                               ),
                             ),
                             child: Center(
@@ -157,13 +227,15 @@ class FoodItemCard extends StatelessWidget {
                                 isFavorite
                                     ? Icons.favorite
                                     : Icons.favorite_border,
-                                size: 18, // Increased size
+                                size: ScreenUtils.responsiveValue(
+                                  context,
+                                  mobile: 18.0,
+                                  tablet: 20.0,
+                                  desktop: 22.0,
+                                ),
                                 color: isFavorite
-                                    ? Colors
-                                          .white // White for filled
-                                    : Theme.of(
-                                        context,
-                                      ).primaryColor, // Primary color for outline
+                                    ? Colors.white
+                                    : Theme.of(context).primaryColor,
                               ),
                             ),
                           ),
@@ -194,7 +266,7 @@ class FoodItemCard extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${foodItem!.name} added to cart!'),
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -208,7 +280,17 @@ class FoodItemCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Select Serving Size'),
+        title: Text(
+          'Select Serving Size',
+          style: TextStyle(
+            fontSize: ScreenUtils.responsiveValue(
+              context,
+              mobile: 16.0,
+              tablet: 18.0,
+              desktop: 20.0,
+            ),
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: foodItem.portions.map((portion) {
@@ -216,19 +298,59 @@ class FoodItemCard extends StatelessWidget {
               leading: Icon(
                 Icons.restaurant,
                 color: Theme.of(context).primaryColor,
+                size: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: 20.0,
+                  tablet: 22.0,
+                  desktop: 24.0,
+                ),
               ),
               title: Text(
                 portion.size,
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 14.0,
+                    tablet: 16.0,
+                    desktop: 18.0,
+                  ),
+                ),
               ),
               subtitle: portion.serves != null
-                  ? Text('Serves ${portion.serves} persons')
-                  : Text(portion.description ?? ''),
+                  ? Text(
+                      'Serves ${portion.serves} persons',
+                      style: TextStyle(
+                        fontSize: ScreenUtils.responsiveValue(
+                          context,
+                          mobile: 12.0,
+                          tablet: 14.0,
+                          desktop: 16.0,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      portion.description ?? '',
+                      style: TextStyle(
+                        fontSize: ScreenUtils.responsiveValue(
+                          context,
+                          mobile: 12.0,
+                          tablet: 14.0,
+                          desktop: 16.0,
+                        ),
+                      ),
+                    ),
               trailing: Text(
                 'Rs${portion.price.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).primaryColor,
+                  fontSize: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 14.0,
+                    tablet: 16.0,
+                    desktop: 18.0,
+                  ),
                 ),
               ),
               onTap: () {
@@ -242,7 +364,7 @@ class FoodItemCard extends StatelessWidget {
                     content: Text(
                       '${foodItem.name} (${portion.size}) added to cart!',
                     ),
-                    duration: Duration(seconds: 2),
+                    duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -253,7 +375,17 @@ class FoodItemCard extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('CANCEL'),
+            child: Text(
+              'CANCEL',
+              style: TextStyle(
+                fontSize: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: 14.0,
+                  tablet: 16.0,
+                  desktop: 18.0,
+                ),
+              ),
+            ),
           ),
         ],
       ),

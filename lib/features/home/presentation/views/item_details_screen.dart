@@ -1,3 +1,4 @@
+// lib/features/home/presentation/views/item_details_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -50,7 +51,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = ScreenUtils.getScreenHeight(context);
-    final modalHeight = screenHeight * 0.8; // Changed from 0.6 to 0.8 (80%)
+    final modalHeight =
+        screenHeight *
+        ScreenUtils.responsiveValue(
+          context,
+          mobile: 0.8, // 80% for mobile
+          tablet: 0.75, // 75% for tablet
+          desktop: 0.7, // 70% for desktop
+        );
 
     return ChangeNotifierProvider.value(
       value: _viewModel,
@@ -58,9 +66,23 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
         height: modalHeight,
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(AppConstants.borderRadius),
-            topRight: Radius.circular(AppConstants.borderRadius),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(
+              ScreenUtils.responsiveValue(
+                context,
+                mobile: AppConstants.borderRadius,
+                tablet: AppConstants.borderRadius * 1.5,
+                desktop: AppConstants.borderRadius * 2,
+              ),
+            ),
+            topRight: Radius.circular(
+              ScreenUtils.responsiveValue(
+                context,
+                mobile: AppConstants.borderRadius,
+                tablet: AppConstants.borderRadius * 1.5,
+                desktop: AppConstants.borderRadius * 2,
+              ),
+            ),
           ),
         ),
         child: Scaffold(
@@ -92,11 +114,33 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Theme.of(context).primaryColor),
-          const SizedBox(height: 16),
+          CircularProgressIndicator(
+            color: Theme.of(context).primaryColor,
+            strokeWidth: ScreenUtils.responsiveValue(
+              context,
+              mobile: 3.0,
+              tablet: 3.5,
+              desktop: 4.0,
+            ),
+          ),
+          SizedBox(
+            height: ScreenUtils.responsiveValue(
+              context,
+              mobile: 16.0,
+              tablet: 20.0,
+              desktop: 24.0,
+            ),
+          ),
           Text(
             'Loading item details...',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: ScreenUtils.responsiveValue(
+                context,
+                mobile: 14.0,
+                tablet: 16.0,
+                desktop: 18.0,
+              ),
+            ),
           ),
         ],
       ),
@@ -106,25 +150,87 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
   Widget _buildErrorState(String error) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(
+          ScreenUtils.responsiveValue(
+            context,
+            mobile: 24.0,
+            tablet: 32.0,
+            desktop: 40.0,
+          ),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
+            Icon(
+              Icons.error_outline,
+              size: ScreenUtils.responsiveValue(
+                context,
+                mobile: 48.0,
+                tablet: 56.0,
+                desktop: 64.0,
+              ),
+              color: Colors.red,
+            ),
+            SizedBox(
+              height: ScreenUtils.responsiveValue(
+                context,
+                mobile: 16.0,
+                tablet: 20.0,
+                desktop: 24.0,
+              ),
+            ),
             Text(
               error,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.red),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.red,
+                fontSize: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: 14.0,
+                  tablet: 16.0,
+                  desktop: 18.0,
+                ),
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(
+              height: ScreenUtils.responsiveValue(
+                context,
+                mobile: 24.0,
+                tablet: 28.0,
+                desktop: 32.0,
+              ),
+            ),
             ElevatedButton(
               onPressed: () {
                 _viewModel.loadFoodItemDetails(widget.itemId);
               },
-              child: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                  horizontal: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 24.0,
+                    tablet: 32.0,
+                    desktop: 40.0,
+                  ),
+                  vertical: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 12.0,
+                    tablet: 14.0,
+                    desktop: 16.0,
+                  ),
+                ),
+              ),
+              child: Text(
+                'Retry',
+                style: TextStyle(
+                  fontSize: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 14.0,
+                    tablet: 16.0,
+                    desktop: 18.0,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -137,9 +243,35 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.fastfood_outlined, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text('Item not found', style: Theme.of(context).textTheme.bodyLarge),
+          Icon(
+            Icons.fastfood_outlined,
+            size: ScreenUtils.responsiveValue(
+              context,
+              mobile: 64.0,
+              tablet: 72.0,
+              desktop: 80.0,
+            ),
+            color: Colors.grey,
+          ),
+          SizedBox(
+            height: ScreenUtils.responsiveValue(
+              context,
+              mobile: 16.0,
+              tablet: 20.0,
+              desktop: 24.0,
+            ),
+          ),
+          Text(
+            'Item not found',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontSize: ScreenUtils.responsiveValue(
+                context,
+                mobile: 16.0,
+                tablet: 18.0,
+                desktop: 20.0,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -159,9 +291,26 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
           children: [
             // Drag handle
             Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: ScreenUtils.responsiveValue(
+                context,
+                mobile: 40.0,
+                tablet: 50.0,
+                desktop: 60.0,
+              ),
+              height: ScreenUtils.responsiveValue(
+                context,
+                mobile: 4.0,
+                tablet: 5.0,
+                desktop: 6.0,
+              ),
+              margin: EdgeInsets.symmetric(
+                vertical: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: 12.0,
+                  tablet: 14.0,
+                  desktop: 16.0,
+                ),
+              ),
               decoration: BoxDecoration(
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
@@ -170,23 +319,50 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
 
             // Header with close button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(
+                horizontal: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: 16.0,
+                  tablet: 24.0,
+                  desktop: 32.0,
+                ),
+              ),
               child: Row(
                 children: [
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
-                    iconSize: 24,
+                    iconSize: ScreenUtils.responsiveValue(
+                      context,
+                      mobile: 24.0,
+                      tablet: 28.0,
+                      desktop: 32.0,
+                    ),
                   ),
                   Expanded(
                     child: Text(
                       item.name,
                       style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 18.0,
+                              tablet: 22.0,
+                              desktop: 26.0,
+                            ),
+                          ),
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(width: 48), // For balance with close button
+                  SizedBox(
+                    width: ScreenUtils.responsiveValue(
+                      context,
+                      mobile: 48.0,
+                      tablet: 56.0,
+                      desktop: 64.0,
+                    ),
+                  ), // For balance with close button
                 ],
               ),
             ),
@@ -194,29 +370,42 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
             // Scrollable content
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 16.0,
+                    tablet: 24.0,
+                    desktop: 32.0,
+                  ),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: ScreenUtils.responsiveValue(
+                        context,
+                        mobile: 16.0,
+                        tablet: 20.0,
+                        desktop: 24.0,
+                      ),
+                    ),
 
                     // Image
                     if (item.imageUrl.isNotEmpty)
-                      Container(
-                        height: 180, // Slightly increased for 80% modal
-                        width: double.infinity,
-                        decoration: BoxDecoration(
+                      AspectRatio(
+                        aspectRatio:
+                            16 / 9, // Standard aspect ratio, adjust as needed
+                        child: ClipRRect(
                           borderRadius: BorderRadius.circular(
                             AppConstants.borderRadius,
                           ),
-                          image: DecorationImage(
-                            image: NetworkImage(item.imageUrl),
-                            fit: BoxFit.cover,
+                          child: Image.network(
+                            item.imageUrl,
+                            fit: BoxFit
+                                .cover, // Cover but within aspect ratio constraints
                           ),
                         ),
                       ),
-
-                    const SizedBox(height: 20),
 
                     // Description
                     if (item.description.isNotEmpty)
@@ -226,14 +415,44 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                           Text(
                             'Description',
                             style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: ScreenUtils.responsiveValue(
+                                    context,
+                                    mobile: 16.0,
+                                    tablet: 18.0,
+                                    desktop: 20.0,
+                                  ),
+                                ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 8.0,
+                              tablet: 10.0,
+                              desktop: 12.0,
+                            ),
+                          ),
                           Text(
                             item.description,
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  fontSize: ScreenUtils.responsiveValue(
+                                    context,
+                                    mobile: 14.0,
+                                    tablet: 16.0,
+                                    desktop: 18.0,
+                                  ),
+                                ),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(
+                            height: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 20.0,
+                              tablet: 24.0,
+                              desktop: 28.0,
+                            ),
+                          ),
                         ],
                       ),
 
@@ -245,16 +464,51 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                           Text(
                             'Ingredients',
                             style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: ScreenUtils.responsiveValue(
+                                    context,
+                                    mobile: 16.0,
+                                    tablet: 18.0,
+                                    desktop: 20.0,
+                                  ),
+                                ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 8.0,
+                              tablet: 10.0,
+                              desktop: 12.0,
+                            ),
+                          ),
                           Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
+                            spacing: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 8.0,
+                              tablet: 12.0,
+                              desktop: 16.0,
+                            ),
+                            runSpacing: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 4.0,
+                              tablet: 6.0,
+                              desktop: 8.0,
+                            ),
                             children: item.ingredients
                                 .map(
                                   (ingredient) => Chip(
-                                    label: Text(ingredient),
+                                    label: Text(
+                                      ingredient,
+                                      style: TextStyle(
+                                        fontSize: ScreenUtils.responsiveValue(
+                                          context,
+                                          mobile: 12.0,
+                                          tablet: 14.0,
+                                          desktop: 16.0,
+                                        ),
+                                      ),
+                                    ),
                                     backgroundColor: Theme.of(
                                       context,
                                     ).primaryColor.withOpacity(0.1),
@@ -262,7 +516,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                                 )
                                 .toList(),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(
+                            height: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 20.0,
+                              tablet: 24.0,
+                              desktop: 28.0,
+                            ),
+                          ),
                         ],
                       ),
 
@@ -281,23 +542,56 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                           Text(
                             'Dietary Information',
                             style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: ScreenUtils.responsiveValue(
+                                    context,
+                                    mobile: 16.0,
+                                    tablet: 18.0,
+                                    desktop: 20.0,
+                                  ),
+                                ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 8.0,
+                              tablet: 10.0,
+                              desktop: 12.0,
+                            ),
+                          ),
                           Text(
                             item.dietaryInfo,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: Theme.of(context).primaryColor,
+                                  fontSize: ScreenUtils.responsiveValue(
+                                    context,
+                                    mobile: 14.0,
+                                    tablet: 16.0,
+                                    desktop: 18.0,
+                                  ),
                                 ),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(
+                            height: ScreenUtils.responsiveValue(
+                              context,
+                              mobile: 20.0,
+                              tablet: 24.0,
+                              desktop: 28.0,
+                            ),
+                          ),
                         ],
                       ),
 
                     // REMOVED: Preparation Time & Rating section
-                    const SizedBox(
-                      height: 120,
+                    SizedBox(
+                      height: ScreenUtils.responsiveValue(
+                        context,
+                        mobile: 120.0,
+                        tablet: 140.0,
+                        desktop: 160.0,
+                      ),
                     ), // Extra space for bottom action bar
                   ],
                 ),
@@ -328,38 +622,85 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
       children: [
         Text(
           'Select Portion',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: ScreenUtils.responsiveValue(
+              context,
+              mobile: 16.0,
+              tablet: 18.0,
+              desktop: 20.0,
+            ),
+          ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(
+          height: ScreenUtils.responsiveValue(
+            context,
+            mobile: 12.0,
+            tablet: 14.0,
+            desktop: 16.0,
+          ),
+        ),
         Column(
           children: item.portions.map((portion) {
             final isSelected = viewModel.selectedPortion == portion.size;
             return CheckboxListTile(
               title: Text(
                 portion.size,
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontSize: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 14.0,
+                    tablet: 16.0,
+                    desktop: 18.0,
+                  ),
+                ),
               ),
               subtitle: Text(
                 portion.formattedPrice,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).primaryColor,
+                  fontSize: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 12.0,
+                    tablet: 14.0,
+                    desktop: 16.0,
+                  ),
                 ),
               ),
               value: isSelected,
               onChanged: (_) => viewModel.selectPortion(portion.size),
               controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+              contentPadding: EdgeInsets.only(
+                right: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: 0.0,
+                  tablet: 8.0,
+                  desktop: 16.0,
+                ),
+              ),
               activeColor: Theme.of(context).primaryColor,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(
+                  ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 8.0,
+                    tablet: 10.0,
+                    desktop: 12.0,
+                  ),
+                ),
               ),
             );
           }).toList(),
         ),
-        const SizedBox(height: 20),
+        SizedBox(
+          height: ScreenUtils.responsiveValue(
+            context,
+            mobile: 20.0,
+            tablet: 24.0,
+            desktop: 28.0,
+          ),
+        ),
       ],
     );
   }
@@ -375,32 +716,83 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
       children: [
         Text(
           'Add-ons',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: ScreenUtils.responsiveValue(
+              context,
+              mobile: 16.0,
+              tablet: 18.0,
+              desktop: 20.0,
+            ),
+          ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(
+          height: ScreenUtils.responsiveValue(
+            context,
+            mobile: 12.0,
+            tablet: 14.0,
+            desktop: 16.0,
+          ),
+        ),
         Column(
           children: item.availableAddOns.map((addOn) {
             final isSelected = viewModel.selectedAddOns[addOn] ?? false;
             return CheckboxListTile(
-              title: Text(addOn),
+              title: Text(
+                addOn,
+                style: TextStyle(
+                  fontSize: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 14.0,
+                    tablet: 16.0,
+                    desktop: 18.0,
+                  ),
+                ),
+              ),
               subtitle: Text(
                 'Rs${item.getAddOnPrice(addOn).toStringAsFixed(2)}',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontSize: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 12.0,
+                    tablet: 14.0,
+                    desktop: 16.0,
+                  ),
+                ),
               ),
               value: isSelected,
               onChanged: (_) => viewModel.toggleAddOn(addOn),
               controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+              contentPadding: EdgeInsets.only(
+                right: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: 0.0,
+                  tablet: 8.0,
+                  desktop: 16.0,
+                ),
+              ),
               activeColor: Theme.of(context).primaryColor,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(
+                  ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 8.0,
+                    tablet: 10.0,
+                    desktop: 12.0,
+                  ),
+                ),
               ),
             );
           }).toList(),
         ),
-        const SizedBox(height: 20),
+        SizedBox(
+          height: ScreenUtils.responsiveValue(
+            context,
+            mobile: 20.0,
+            tablet: 24.0,
+            desktop: 28.0,
+          ),
+        ),
       ],
     );
   }
@@ -410,19 +802,42 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
     BuildContext context,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.paddingLarge,
-        vertical: AppConstants.paddingMedium,
+      padding: EdgeInsets.symmetric(
+        horizontal: ScreenUtils.responsiveValue(
+          context,
+          mobile: AppConstants.paddingLarge,
+          tablet: AppConstants.paddingLarge * 1.5,
+          desktop: AppConstants.paddingLarge * 2,
+        ),
+        vertical: ScreenUtils.responsiveValue(
+          context,
+          mobile: AppConstants.paddingMedium,
+          tablet: AppConstants.paddingMedium * 1.2,
+          desktop: AppConstants.paddingMedium * 1.5,
+        ),
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         border: Border(
-          top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+          top: BorderSide(
+            color: Theme.of(context).dividerColor,
+            width: ScreenUtils.responsiveValue(
+              context,
+              mobile: 1.0,
+              tablet: 1.2,
+              desktop: 1.5,
+            ),
+          ),
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
+            blurRadius: ScreenUtils.responsiveValue(
+              context,
+              mobile: 10.0,
+              tablet: 12.0,
+              desktop: 15.0,
+            ),
             offset: const Offset(0, -5),
           ),
         ],
@@ -432,40 +847,97 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
           // Quantity Selector
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Theme.of(context).dividerColor),
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              border: Border.all(
+                color: Theme.of(context).dividerColor,
+                width: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: 1.0,
+                  tablet: 1.2,
+                  desktop: 1.5,
+                ),
+              ),
+              borderRadius: BorderRadius.circular(
+                ScreenUtils.responsiveValue(
+                  context,
+                  mobile: AppConstants.borderRadius,
+                  tablet: AppConstants.borderRadius * 1.2,
+                  desktop: AppConstants.borderRadius * 1.5,
+                ),
+              ),
             ),
             child: Row(
               children: [
                 IconButton(
                   icon: const Icon(Icons.remove),
                   onPressed: viewModel.decreaseQuantity,
-                  iconSize: 20,
-                  padding: const EdgeInsets.all(8),
+                  iconSize: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 20.0,
+                    tablet: 22.0,
+                    desktop: 24.0,
+                  ),
+                  padding: EdgeInsets.all(
+                    ScreenUtils.responsiveValue(
+                      context,
+                      mobile: 8.0,
+                      tablet: 10.0,
+                      desktop: 12.0,
+                    ),
+                  ),
                   constraints: const BoxConstraints(),
                 ),
                 Container(
-                  width: 40,
+                  width: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 40.0,
+                    tablet: 48.0,
+                    desktop: 56.0,
+                  ),
                   alignment: Alignment.center,
                   child: Text(
                     viewModel.quantity.toString(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
+                      fontSize: ScreenUtils.responsiveValue(
+                        context,
+                        mobile: 16.0,
+                        tablet: 18.0,
+                        desktop: 20.0,
+                      ),
                     ),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.add),
                   onPressed: viewModel.increaseQuantity,
-                  iconSize: 20,
-                  padding: const EdgeInsets.all(8),
+                  iconSize: ScreenUtils.responsiveValue(
+                    context,
+                    mobile: 20.0,
+                    tablet: 22.0,
+                    desktop: 24.0,
+                  ),
+                  padding: EdgeInsets.all(
+                    ScreenUtils.responsiveValue(
+                      context,
+                      mobile: 8.0,
+                      tablet: 10.0,
+                      desktop: 12.0,
+                    ),
+                  ),
                   constraints: const BoxConstraints(),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(width: 6),
+          SizedBox(
+            width: ScreenUtils.responsiveValue(
+              context,
+              mobile: 12.0,
+              tablet: 16.0,
+              desktop: 20.0,
+            ),
+          ),
 
           // Total Price and Add to Cart Button
           Expanded(
@@ -478,13 +950,24 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                     color: Theme.of(
                       context,
                     ).textTheme.bodySmall?.color?.withOpacity(0.7),
+                    fontSize: ScreenUtils.responsiveValue(
+                      context,
+                      mobile: 12.0,
+                      tablet: 14.0,
+                      desktop: 16.0,
+                    ),
                   ),
                 ),
                 Text(
                   'Rs${viewModel.calculateTotalPrice().toStringAsFixed(0)}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: ScreenUtils.responsiveValue(
+                      context,
+                      mobile: 16.0,
+                      tablet: 18.0,
+                      desktop: 20.0,
+                    ),
                     color: Theme.of(context).primaryColor,
                   ),
                 ),
@@ -492,7 +975,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
             ),
           ),
 
-          const SizedBox(width: 6),
+          SizedBox(
+            width: ScreenUtils.responsiveValue(
+              context,
+              mobile: 12.0,
+              tablet: 16.0,
+              desktop: 20.0,
+            ),
+          ),
 
           // Add to Cart Button
           ElevatedButton(
@@ -502,16 +992,43 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).primaryColor,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.paddingLarge,
-                vertical: AppConstants.paddingMedium,
+              padding: EdgeInsets.symmetric(
+                horizontal: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: AppConstants.paddingLarge,
+                  tablet: AppConstants.paddingLarge * 1.5,
+                  desktop: AppConstants.paddingLarge * 2,
+                ),
+                vertical: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: AppConstants.paddingMedium,
+                  tablet: AppConstants.paddingMedium * 1.2,
+                  desktop: AppConstants.paddingMedium * 1.5,
+                ),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                borderRadius: BorderRadius.circular(
+                  ScreenUtils.responsiveValue(
+                    context,
+                    mobile: AppConstants.borderRadius,
+                    tablet: AppConstants.borderRadius * 1.2,
+                    desktop: AppConstants.borderRadius * 1.5,
+                  ),
+                ),
               ),
               elevation: 2,
             ),
-            child: const Text('Add to Cart'),
+            child: Text(
+              'Add to Cart',
+              style: TextStyle(
+                fontSize: ScreenUtils.responsiveValue(
+                  context,
+                  mobile: 14.0,
+                  tablet: 16.0,
+                  desktop: 18.0,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -585,9 +1102,26 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
         SnackBar(
           content: Text(
             '${viewModel.quantity}x ${item.name} (${selectedPortion}) added to cart',
+            style: TextStyle(
+              fontSize: ScreenUtils.responsiveValue(
+                context,
+                mobile: 14.0,
+                tablet: 16.0,
+                desktop: 18.0,
+              ),
+            ),
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          padding: EdgeInsets.all(
+            ScreenUtils.responsiveValue(
+              context,
+              mobile: 16.0,
+              tablet: 20.0,
+              desktop: 24.0,
+            ),
+          ),
         ),
       );
 
@@ -602,9 +1136,27 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to add to cart: $e'),
+          content: Text(
+            'Failed to add to cart: $e',
+            style: TextStyle(
+              fontSize: ScreenUtils.responsiveValue(
+                context,
+                mobile: 14.0,
+                tablet: 16.0,
+                desktop: 18.0,
+              ),
+            ),
+          ),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
+          padding: EdgeInsets.all(
+            ScreenUtils.responsiveValue(
+              context,
+              mobile: 16.0,
+              tablet: 20.0,
+              desktop: 24.0,
+            ),
+          ),
         ),
       );
     }
